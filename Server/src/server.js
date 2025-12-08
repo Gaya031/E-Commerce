@@ -5,6 +5,7 @@ import main from "./config/db.js";
 import redisClient from "./config/Redis.js";
 import authRoute from "./routes/auth.routes.js"; 
 import addressRouter from "./routes/address.routes.js";
+import productRoute from "./routes/product.routes.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(cookieParser());
 
 app.use('/auth', authRoute);
 app.use('/address', addressRouter)
+app.use('/products', productRoute)
 
 const InitializeConnection = async () => {
   try {
