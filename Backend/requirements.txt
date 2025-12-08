@@ -1,0 +1,31 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=1.4
+asyncpg
+alembic
+pydantic
+pydantic[email]
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+databases              # optional if you prefer databases package
+psycopg2-binary       # if using sync psycopg2 for non-async parts
+email-validator
+cloudinary
+razorpay
+redis
+rq
+celery
+httpx
+python-multipart
+email-validator
+gunicorn
+pyjwt
+pymongo
+motor
+loguru
+sentry-sdk
+fastapi-mail
+slowapi
+bcrypt==4.0.1
