@@ -2,25 +2,25 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # App
-    APP_NAME: str = "e-commerce"
+    APP_NAME: str
     DEBUG: bool = True
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str 
     
     # Postgres
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
+    POSTGRES_HOST: str 
+    POSTGRES_PORT: int
     POSTGRES_DB: str
 
     # Redis
-    REDIS_URL: str = "redis://default:mTwwflQ4yqRLog1CR40cEmxs8PG1SLDg@redis-14723.c81.us-east-1-2.ec2.cloud.redislabs.com:14723"
+    REDIS_URL: str
     # JWT
     SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
-    JWT_ISSUER : str = "e-commerce-auth"
+    ALGORITHM: str 
+    ACCESS_TOKEN_EXPIRE_MINUTES: int 
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+    JWT_ISSUER : str
     # Security
     BCRYPT_ROUNDS: int = 12
     
