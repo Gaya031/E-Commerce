@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.postgres import get_db
-from app.schemas.deliver_schema import (DeliveryAssign, DeliveryStatusUpdate)
+from app.schemas.delivery_schema import (DeliveryAssign, DeliveryStatusUpdate)
 from app.services.delivery_service import (assign_delivery_partner, update_delivery_status)
 from app.api.deps.auth_deps import require_roles
 from app.models.user_model import User

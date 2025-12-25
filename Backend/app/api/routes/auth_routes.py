@@ -5,10 +5,12 @@ from app.db.postgres import get_db
 from app.services.auth_service import (create_user, authenticate_user, create_tokens_for_user, refresh_access_token, logout_user, get_user_by_email)
 from app.api.deps.auth_deps import get_current_user
 from app.models.user_model import User
+from app.utils.rate_limiter import RateLimiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+register_rate_limit = RateLimiter(limit=3, window_seconds=300, key_prefix="register")
+@router.post("/register", dependencies=[Depends(register_rate_limit)], response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     existing = await get_user_by_email(db, user_in.email)
     if existing:
@@ -17,8 +19,8 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     return user
 
 
-
-@router.post("/login", response_model=TokenPair)
+login_rate_limit = RateLimiter(limit=5, window_seconds=60, key_prefix="login")
+@router.post("/login", dependencies=[Depends(login_rate_limit)], response_model=TokenPair)
 async def login(data: UserIn, db: AsyncSession = Depends(get_db)):
     user = await authenticate_user(db, data.email, data.password)
     if not user:
@@ -27,8 +29,8 @@ async def login(data: UserIn, db: AsyncSession = Depends(get_db)):
     return {"access_token": access, "refresh_token": refresh, "token_type": "bearer"}
 
 
-
-@router.post("/refresh", response_model=TokenPair)
+refresh_rate_limit = RateLimiter(limit=10, window_seconds=300, key_prefix="refresh")
+@router.post("/refresh", dependencies=[Depends(refresh_rate_limit)], response_model=TokenPair)
 async def refresh(tokens: dict, db: AsyncSession = Depends(get_db)):
     refresh_token = tokens.get("refresh_token")
     if not refresh_token:
