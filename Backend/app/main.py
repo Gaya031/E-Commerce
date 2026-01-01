@@ -7,6 +7,7 @@ from app.core.exceptions import AppException
 from app.core.logging import logger
 from fastapi.responses import JSONResponse
 from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +27,14 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
         lifespan=lifespan,
     )
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
 
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
@@ -39,6 +48,10 @@ def create_app() -> FastAPI:
                     "code": exc.code,
                     "message": exc.message,
                 },
+            },
+            headers={
+                "Access-Control-Allow_Origin": "http://localhost:5173",
+                "Access-Control-Allow-Credentials": "true"
             },
         )
 

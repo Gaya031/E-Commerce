@@ -6,7 +6,7 @@ from app.services.seller_service import (create_seller_profile, upload_kyc, appr
 from app.api.deps.auth_deps import get_current_user, require_roles
 from app.models.user_model import User
 
-router = APIRouter(prefix="/sellers", tags=["sellers"])
+router = APIRouter(tags=["sellers"])
 
 @router.post("/", response_model=SellerOut, status_code=status.HTTP_201_CREATED)
 async def create_seller(data: SellerCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_roles("seller"))):

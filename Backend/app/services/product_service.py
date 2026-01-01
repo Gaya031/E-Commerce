@@ -78,3 +78,9 @@ async def reduce_stock(db: AsyncSession, product_id: int, quantity: int):
     
     product.stock -= quantity
     await db.commit()
+
+async def get_products(db: AsyncSession):
+    result = await db.execute(select(Product))
+    product = result.scalars().all()
+    
+    return product

@@ -37,6 +37,6 @@ def decode_token(token: str) -> Dict[str, Any]:
         return payload
     except ExpiredSignatureError:
         raise ValueError('Token has Expired')
-    except InvalidTokenError:
-        raise ValueError("Invalid token")
+    except InvalidTokenError as e:
+        raise ValueError(f"Invalid token: {str(e)}")
     

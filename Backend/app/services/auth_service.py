@@ -2,7 +2,6 @@ from typing import Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
-
 from app.models.user_model import User
 from app.schemas.auth_schema import UserCreate
 from app.utils.hashing import get_password_hashed, verify_password
@@ -13,8 +12,9 @@ from app.db.redis import get_redis
 REFRESH_TOKEN_TTL = 60*60*24*7
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
+    print(f"email got:{email}")
     result = await db.execute(select(User).where(User.email == email))
-    return result.scalars().first()
+    return result.scalar_one_or_none()
 
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     user = User(
@@ -30,9 +30,13 @@ async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     return user
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> User:
+    print("email recieved")
+    print(email)
     user = await get_user_by_email(db, email)
-    if not user or not verify_password(password, user.password):
-        raise AuthException("Invalid email or password")
+    if not user:
+        raise AuthException("Invalid email from password from user block")
+    if not verify_password(password, user.password):
+        raise AuthException("invalid email or password from password block")
     if user.is_blocked:
         raise AuthException("User is Blocked")
     return user

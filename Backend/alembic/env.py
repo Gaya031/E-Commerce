@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+sys.path.append(str(BASE_DIR))
+
 import asyncio
 from logging.config import fileConfig
 from alembic import context
@@ -49,9 +55,49 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+# # -------------------------
+# # ONLINE MIGRATIONS (ASYNC)
+# # -------------------------
+# async def run_migrations_online() -> None:
+#     configuration = config.get_section(config.config_ini_section)
+#     configuration["sqlalchemy.url"] = get_database_url()
+
+#     engine = async_engine_from_config(
+#         configuration,
+#         prefix="sqlalchemy.",
+#         poolclass=pool.NullPool,
+#     )
+
+#     async with engine.connect() as connection:
+#         await connection.run_sync(
+#             lambda sync_conn: context.configure(
+#                 connection=sync_conn,
+#                 target_metadata=target_metadata,
+#                 compare_type=True,
+#                 compare_server_default=True,
+#             )
+#         )
+
+#         await connection.run_sync(context.run_migrations)
+
+#     await engine.dispose()
+
+
 # -------------------------
 # ONLINE MIGRATIONS (ASYNC)
 # -------------------------
+def do_run_migrations(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        compare_server_default=True,
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
 async def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_database_url()
@@ -63,18 +109,10 @@ async def run_migrations_online() -> None:
     )
 
     async with engine.connect() as connection:
-        await connection.run_sync(
-            lambda sync_conn: context.configure(
-                connection=sync_conn,
-                target_metadata=target_metadata,
-                compare_type=True,
-                compare_server_default=True,
-            )
-        )
-
-        await connection.run_sync(context.run_migrations)
+        await connection.run_sync(do_run_migrations)
 
     await engine.dispose()
+
 
 
 # -------------------------

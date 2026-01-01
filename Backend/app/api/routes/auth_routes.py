@@ -22,6 +22,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 login_rate_limit = RateLimiter(limit=5, window_seconds=60, key_prefix="login")
 @router.post("/login", dependencies=[Depends(login_rate_limit)], response_model=TokenPair)
 async def login(data: UserIn, db: AsyncSession = Depends(get_db)):
+    print("data recieved")
     user = await authenticate_user(db, data.email, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid Credentials")

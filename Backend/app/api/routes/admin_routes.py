@@ -11,7 +11,7 @@ admin_rate_limit = RateLimiter(limit=50, window_seconds=60, key_prefix="admin")
 router = APIRouter(prefix="/admin", dependencies=[Depends(admin_rate_limit)] ,tags=["admin"])
 
 @router.patch("/users/{user_id}")
-async def block_unblock_user(user_id: int, data: UserBlock, db: AsyncSession, admin: User = Depends(require_roles("admin"))):
+async def block_unblock_user(user_id: int, data: UserBlock, db: AsyncSession = Depends(get_db), admin: User = Depends(require_roles("admin"))):
     return await block_user(db=db, user_id=user_id, blocked=data.blocked)
 
 @router.post("/sellers/{seller_id}/decision")

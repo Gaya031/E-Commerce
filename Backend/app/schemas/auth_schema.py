@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     role: UserRole = UserRole.buyer
 
 class UserIn(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     
 class UserOut(BaseModel):
