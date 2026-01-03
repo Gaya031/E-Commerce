@@ -31,7 +31,7 @@ const Login = () => {
     return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar */}
-      <nav className="flex items-center justify-between px-8 py-4 bg-white border-b">
+      {/* <nav className="flex items-center justify-between px-8 py-4 bg-white border-b">
         <div className="flex items-center gap-2 text-lg font-semibold">
           🛍️ Sahu Mart
         </div>
@@ -44,7 +44,7 @@ const Login = () => {
             Register
           </button>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Main Card */}
       <div className="flex items-center justify-center px-4 py-16">
@@ -120,7 +120,7 @@ const Login = () => {
 
             <p className="mt-6 text-sm text-center text-gray-500">
               Don’t have an account?{" "}
-              <a href="#" className="text-blue-600 hover:underline">
+              <a href="/register" className="text-blue-600 hover:underline">
                 Register
               </a>
             </p>
