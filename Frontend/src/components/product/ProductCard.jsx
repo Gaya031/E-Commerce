@@ -1,13 +1,21 @@
 import { Button } from "@/components/ui/button";
 
-export default function ProductCard() {
+export default function ProductCard({ product }) {
   return (
     <div className="bg-white p-3 rounded-xl">
-      <img src="/product.jpg" alt="product" />
+      <img
+        src={product.image || "/product.jpg"}
+        alt={product.title}
+      />
+
       <h4 className="text-sm font-medium mt-2">
-        Fresh Milk 1L
+        {product.title}
       </h4>
-      <p className="text-green-600 font-semibold">₹60</p>
+
+      <p className="text-green-600 font-semibold">
+        ₹{product.price}
+      </p>
+
       <Button size="sm" className="mt-2 w-full">
         + Add
       </Button>

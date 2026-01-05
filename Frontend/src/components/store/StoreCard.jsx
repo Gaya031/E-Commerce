@@ -1,20 +1,23 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import React from 'react'
 
-export default function StoreCard() {
+const StoreCard = ({ store }) => {
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm">
+    <div className='bg-white p-4 rounded-xl shadow-sm cursor-pointer'>
       <img
-        src="/store.jpg"
-        className="rounded-lg"
-        alt="Store"
+        src={store.image || "/store.jpg"}
+        className='rounded-lg'
+        alt={store.name}
       />
-      <h4 className="font-semibold mt-2">
-        Gupta General Store
-      </h4>
-      <p className="text-sm text-gray-500">
-        0.8 km • 15 mins
+      <h4 className='font-semibold mt-2'>{store.name}</h4>
+      <p className='text-sm text-gray-500'>
+        {store.distance_km} km • {store.eta_mins} mins
       </p>
-      <Badge className="mt-2">Free Delivery</Badge>
+      {store.is_open && (
+        <Badge className='mt-2'>Open Now</Badge>
+      )}
     </div>
-  );
+  )
 }
+
+export default StoreCard
