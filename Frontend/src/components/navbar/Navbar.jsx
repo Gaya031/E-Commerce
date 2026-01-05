@@ -1,4 +1,4 @@
-import LocationSelector from "./LocationSelector";
+import LocationSelector from "./LocationsSelector";
 import SearchBar from "./SearchBar";
 import ProfileDropdown from "./ProfileDropdown";
 import { Button } from "@/components/ui/button";
