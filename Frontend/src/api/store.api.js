@@ -5,3 +5,11 @@ export const getNearbyStores = ({lat, lng}) => {
         params: {lat, lng}
     });
 };
+
+export const getStoreDetails = storeId => {
+    return api.get(`/stores/${storeId}`);
+};
+
+export const getStoreProducts = storeId => {
+    return api.get(`/stores/${storeId}/products`);
+};

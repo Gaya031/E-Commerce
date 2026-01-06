@@ -7,6 +7,11 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/auth/Login";
 import Home from "./pages/buyer/Home";
 import Register from "./pages/auth/Register";
+import StoreLayout from "./pages/store/StoreLayout";
+import Products from "./pages/store/Products";
+import Review from "./pages/store/Review";
+import Promotions from "./pages/store/Promotions";
+import About from "./pages/store/About";
 // import Home from "./pages/buyer/Home";
 // import AdminSellers from "./pages/admin/Sellers";
 
@@ -23,7 +28,7 @@ function App() {
           path="/"
           element={
             // <ProtectedRoute>
-              <Home />
+            <Home />
             // </ProtectedRoute>
           }
         />
@@ -38,6 +43,13 @@ function App() {
             </ProtectedRoute>
           }
         /> */}
+
+        <Route path="/store/:storeId" element={<StoreLayout />}>
+          <Route index element={<Products />} />
+          <Route path="reviews" element={<Review />} />
+          <Route path="promotions" element={<Promotions />} />
+          <Route path="about" element={<About />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
