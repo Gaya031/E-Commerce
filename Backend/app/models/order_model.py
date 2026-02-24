@@ -1,12 +1,13 @@
 import enum
 from sqlalchemy import (Column, Integer, Enum, ForeignKey, Boolean, DateTime, Text, func)
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 class OrderStatus(str, enum.Enum):
     placed = "placed"
-    packed = "packed"
-    shipped = "shipped"
+    # packed = "packed"
+    # shipped = "shipped"
     delivered = "delivered"
     cancelled = "cancelled"
     
@@ -30,14 +31,15 @@ class Order(Base):
     payment_method = Column(Enum(PaymentMethod), nullable=False)
     status = Column(Enum(OrderStatus), default=OrderStatus.placed)
     address = Column(JSONB, nullable=False)
-    is_returned = Column(Boolean, default=False)
-    return_status = Column(Enum(ReturnStatus), default=ReturnStatus.none)
-    return_reason = Column(Text)
-    return_image = Column(Text)
+    # is_returned = Column(Boolean, default=False)
+    # return_status = Column(Enum(ReturnStatus), default=ReturnStatus.none)
+    # return_reason = Column(Text)
+    # return_image = Column(Text)
     
-    delivery_partner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    product_picked = Column(Boolean, default=False)
-    commission_amount = Column(Integer)
+    # delivery_partner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # product_picked = Column(Boolean, default=False)
+    # commission_amount = Column(Integer)
+    items = relationship("OrderItem", back_populates="order")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

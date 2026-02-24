@@ -13,3 +13,5 @@ export const getStoreDetails = storeId => {
 export const getStoreProducts = storeId => {
     return api.get(`/stores/${storeId}/products`);
 };
+
+export const getStoreBestSellers = storeId => api.get(`/stores/${storeId}/bestsellers`);

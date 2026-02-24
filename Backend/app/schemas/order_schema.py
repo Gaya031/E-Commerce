@@ -2,9 +2,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from app.models.order_model  import OrderStatus, PaymentMethod
 
-class OrderItemCreate(BaseModel):
+class CartItemIn(BaseModel):
     product_id: int
-    quantity: int = Field(gt=0)
+    quantity: int
     
 class AddressSchema(BaseModel):
     name: str
@@ -17,7 +17,7 @@ class AddressSchema(BaseModel):
     
 class OrderCreate(BaseModel):
     seller_id: int
-    items: List[OrderItemCreate]
+    items: List[CartItemIn]
     address: AddressSchema
     payment_method: PaymentMethod
     
@@ -28,3 +28,7 @@ class ReturnRequest(BaseModel):
     reason: str
     image: Optional[str]
     
+class OrderOut(BaseModel):
+    order_id: int
+    status: str
+    total_amount: float

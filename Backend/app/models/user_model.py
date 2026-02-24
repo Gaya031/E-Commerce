@@ -20,6 +20,15 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False, default=UserRole.buyer)
     wallet_balance = Column(Integer, default=0)
     is_blocked = Column(Boolean, default=False)
+    
+    # Location fields
+    address = Column(String(500), nullable=True)
+    city = Column(String(100), nullable=True)
+    state = Column(String(100), nullable=True)
+    pincode = Column(String(20), nullable=True)
+    latitude = Column(String(50), nullable=True)
+    longitude = Column(String(50), nullable=True)
+    
     user_metadata = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

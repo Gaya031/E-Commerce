@@ -9,6 +9,14 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User:
         raise NotFoundException("user not found")
     return user
 
+async def update_user_location(db: AsyncSession, user_id: int, location_data: dict) -> User:
+    user = await get_user_by_id(db, user_id)
+    for key, value in location_data.items():
+        setattr(user, key, value)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
 async def list_users(db: AsyncSession, page: int = 1, size: int = 20):
     offset = (page - 1) * size
     result = await db.execute(select(User).offset(offset).limit(size))

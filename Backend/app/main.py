@@ -1,22 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from app.core.config import settings
 from app.api.api_v1 import api_router
 from app.db.redis import init_redis, close_redis
+from app.db.postgres import init_db
 from app.core.exceptions import AppException
 from app.core.logging import logger
-from fastapi.responses import JSONResponse
-from fastapi import Request
-from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting Sahu Mart backend...")
+    logger.info("Starting RushCart backend...")
+    await init_db()
+    logger.info("Database schema initialized")
     await init_redis()
     logger.info("Redis connected")
-    logger.info("Database schema managed by Alembic")
     yield
-    logger.info("Shutting down Sahu Mart backend...")
+    logger.info("Shutting down RushCart backend...")
     await close_redis()
     logger.info("Redis connection closed")
 
