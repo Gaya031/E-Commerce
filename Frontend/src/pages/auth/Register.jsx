@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../api/auth.api";
+import { pushToast } from "../../store/toast.store";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -34,7 +35,8 @@ export default function Register() {
 
     try {
       await register(form);
-      navigate("/login");
+      pushToast({ type: "success", message: "Registration successful. Please login to continue." });
+      navigate("/");
     } catch (err) {
       setError(
         err?.response?.data?.detail || "Registration failed"
@@ -48,7 +50,7 @@ export default function Register() {
         {/* LEFT */}
         <div className="w-full px-8 py-10 bg-white lg:w-1/2">
           <div className="flex items-center gap-2 mb-8 text-lg font-semibold">
-            📄 Sahu Mart
+            📄 RushCart
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900">
@@ -60,7 +62,7 @@ export default function Register() {
 
           {/* Role Tabs */}
           <div className="flex gap-2 p-1 mt-6 ml-32 bg-blue-50 rounded-full w-fit">
-            {["buyer", "seller", "partner"].map(r => (
+            {["buyer", "seller", "delivery"].map(r => (
               <button
                 key={r}
                 type="button"

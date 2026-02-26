@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 SQLAlchemy>=1.4
 asyncpg
-alembic
 pydantic
 pydantic[email]
 pydantic-settings
@@ -11,7 +10,6 @@ passlib[bcrypt]
 python-dotenv
 databases              # optional if you prefer databases package
 psycopg2-binary       # if using sync psycopg2 for non-async parts
-email-validator
 cloudinary
 razorpay
 redis

@@ -1,7 +1,12 @@
-import React from 'react'
+import React, { useState } from 'react'
 
-const DeliverySchedule = () => {
+const DeliverySchedule = ({ onModeChange }) => {
   const [mode, setMode] = useState("instant");
+
+  const chooseMode = (nextMode) => {
+    setMode(nextMode);
+    onModeChange?.(nextMode);
+  };
 
   return (
     <div className="bg-white p-6 rounded-xl">
@@ -9,7 +14,7 @@ const DeliverySchedule = () => {
 
       <div className="grid grid-cols-2 gap-4">
         <div
-          onClick={() => setMode("instant")}
+          onClick={() => chooseMode("instant")}
           className={`border p-4 rounded-xl cursor-pointer ${
             mode === "instant"
               ? "border-green-500 bg-green-50"
@@ -21,7 +26,7 @@ const DeliverySchedule = () => {
         </div>
 
         <div
-          onClick={() => setMode("scheduled")}
+          onClick={() => chooseMode("scheduled")}
           className={`border p-4 rounded-xl cursor-pointer ${
             mode === "scheduled"
               ? "border-green-500 bg-green-50"

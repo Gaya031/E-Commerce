@@ -4,13 +4,13 @@ import { useOutletContext } from 'react-router-dom'
 const StoreInfo = () => {
     const {store} = useOutletContext();
   return (
-    <div className="mt-4 text-sm trxt-gray-600">
-        <p><b>Address:</b> {store.address || "Sector 62, Noida"}</p>
+    <div className="mt-4 text-sm text-gray-600">
+        <p><b>Address:</b> {store.address || "Not provided"}</p>
         <p className='mt-1'>
-            <b>Delivery:</b> {store.eta_min} mins
+            <b>City:</b> {store.city || "Not provided"}
         </p>
         <p className='mt-1'>
-            <b>Open:</b> {store.is_open ? "Yes" : "No"}
+            <b>Rating:</b> {store.average_rating || 0} / 5
         </p>
     </div>
   );

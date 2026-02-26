@@ -5,14 +5,19 @@ from redis.asyncio import Redis
 from app.models.user_model import User
 from app.schemas.auth_schema import UserCreate
 from app.utils.hashing import get_password_hashed, verify_password
-from app.utils.jwt_handler import (create_access_token, create_refresh_token, decode_token)
+from app.utils.jwt_handler import (
+    create_access_token,
+    create_refresh_token,
+    create_reset_token,
+    decode_token,
+)
 from app.core.exceptions import(AuthException, NotFoundException)
 from app.db.redis import get_redis
 
 REFRESH_TOKEN_TTL = 60*60*24*7
+RESET_TOKEN_TTL = 60 * 30
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    print(f"email got:{email}")
     result = await db.execute(select(User).where(User.email == email))
     return result.scalar_one_or_none()
 
@@ -30,13 +35,11 @@ async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     return user
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> User:
-    print("email recieved")
-    print(email)
     user = await get_user_by_email(db, email)
     if not user:
-        raise AuthException("Invalid email from password from user block")
+        raise AuthException("Invalid email or password")
     if not verify_password(password, user.password):
-        raise AuthException("invalid email or password from password block")
+        raise AuthException("Invalid email or password")
     if user.is_blocked:
         raise AuthException("User is Blocked")
     return user
@@ -78,7 +81,7 @@ async def refresh_access_token(db: AsyncSession, refresh_token: str) -> Tuple[st
     new_refresh = create_refresh_token(user.id)
     
     await redis.set(
-        f"refresh: {user.id}",
+        f"refresh:{user.id}",
         new_refresh,
         ex=REFRESH_TOKEN_TTL
     )
@@ -87,3 +90,38 @@ async def refresh_access_token(db: AsyncSession, refresh_token: str) -> Tuple[st
 async def logout_user(user: User) -> None:
     redis: Redis = await get_redis()
     await redis.delete(f"refresh:{user.id}")
+
+
+async def request_password_reset(db: AsyncSession, email: str) -> tuple[str | None, User | None]:
+    user = await get_user_by_email(db, email)
+    if not user:
+        return None, None
+    token = create_reset_token(user.id)
+    redis: Redis = await get_redis()
+    await redis.set(f"reset:{user.id}", token, ex=RESET_TOKEN_TTL)
+    return token, user
+
+
+async def reset_password(db: AsyncSession, token: str, new_password: str) -> bool:
+    try:
+        payload = decode_token(token)
+    except ValueError:
+        return False
+    if payload.get("type") != "reset":
+        return False
+
+    user_id = int(payload["sub"])
+    redis: Redis = await get_redis()
+    stored_token = await redis.get(f"reset:{user_id}")
+    if not stored_token or stored_token != token:
+        return False
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        return False
+
+    user.password = get_password_hashed(new_password)
+    await db.commit()
+    await redis.delete(f"reset:{user_id}")
+    return True

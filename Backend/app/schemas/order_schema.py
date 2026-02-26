@@ -13,7 +13,8 @@ class AddressSchema(BaseModel):
     city: str
     state: str
     pincode: str
-    coordinates: Optional[Dict]
+    coordinates: Optional[Dict] = None
+    delivery_mode: Optional[str] = "instant"
     
 class OrderCreate(BaseModel):
     seller_id: int

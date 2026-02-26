@@ -2,50 +2,60 @@ import React from 'react'
 import { useState } from 'react';
 import { login, getMe } from '../../api/auth.api';
 import { useAuthStore } from '../../store/auth.store';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useCartStore } from '../../store/cart.store';
+import { useNavigate } from 'react-router-dom';
+import { pushToast } from '../../store/toast.store';
+import { getRoleHomePath } from '../../utils/rolePaths';
+
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const setAuth = useAuthStore(state => state.setAuth);
+    const syncGuestCartToServer = useCartStore((s) => s.syncGuestCartToServer);
 
-    // console.log(email)
-    // console.log(password)
     const submit = async e => {
         e.preventDefault();
+        setLoading(true);
         try {
             const res = await login({ email, password });
-            const { access_token } = res.data;
-            setAuth(null, access_token);
+            const access_token = res.data?.access_token || res.data?.accessToken || res.access_token;
+            const refresh_token = res.data?.refresh_token || res.data?.refreshToken || res.refresh_token;
             
-            const me = await getMe();
-            console.log("Login Success: ", me.data);
+            if (!access_token) {
+                pushToast({ type: "error", message: "Login failed: no access token in response." });
+                setLoading(false);
+                return;
+            }
             
-            setAuth(me.data, access_token);
-            navigate("/");
+            setAuth(null, access_token, refresh_token);
+            
+            // Try to get user profile
+            try {
+                const me = await getMe();
+                setAuth(me.data, access_token, refresh_token);
+                if (me.data?.role === "buyer") {
+                  await syncGuestCartToServer();
+                }
+                navigate(getRoleHomePath(me.data?.role), { replace: true });
+            } catch (meErr) {
+                console.error("GetMe error:", meErr);
+                pushToast({
+                  type: "warning",
+                  message: "Login succeeded but profile fetch failed. Please refresh.",
+                });
+                navigate("/");
+            }
         } catch (err) {
-            console.log("Login Failed: ", err);
-            alert("Invalid credentials");
+            pushToast({ type: "error", message: err.response?.data?.detail || "Invalid credentials." });
+        } finally {
+            setLoading(false);
         }
     };
+
     return (
     <div className="min-h-screen bg-slate-50">
-      {/* Navbar */}
-      {/* <nav className="flex items-center justify-between px-8 py-4 bg-white border-b">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          🛍️ Sahu Mart
-        </div>
-
-        <div className="flex items-center gap-6 text-sm">
-          <a className="text-gray-600 hover:text-black" href="#">Home</a>
-          <a className="text-gray-600 hover:text-black" href="#">About Us</a>
-          <a className="text-gray-600 hover:text-black" href="#">Contact Support</a>
-          <button className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            Register
-          </button>
-        </div>
-      </nav> */}
-
       {/* Main Card */}
       <div className="flex items-center justify-center px-4 py-16">
         <div className="flex w-full max-w-5xl overflow-hidden bg-white shadow-xl rounded-2xl">
@@ -92,7 +102,7 @@ const Login = () => {
                 </label>
                 <input
                   type="email"
-                  placeholder="name@sahumart.com"
+                  placeholder="name@example.com"
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={e => setEmail(e.target.value)}
                 />
@@ -101,7 +111,7 @@ const Login = () => {
               <div>
                 <div className="flex justify-between mb-1">
                   <label className="text-sm text-gray-600">Password</label>
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
+                  <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
                     Forgot Password?
                   </a>
                 </div>
@@ -113,13 +123,13 @@ const Login = () => {
                 />
               </div>
 
-              <button type='submit' className="w-full py-3 mt-2 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                Sign In →
+              <button type='submit' disabled={loading} className="w-full py-3 mt-2 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+                {loading ? "Signing in..." : "Sign In →"}
               </button>
             </form>
 
             <p className="mt-6 text-sm text-center text-gray-500">
-              Don’t have an account?{" "}
+              Don't have an account?{" "}
               <a href="/register" className="text-blue-600 hover:underline">
                 Register
               </a>
@@ -144,7 +154,7 @@ const Login = () => {
               </h2>
               <p className="mt-3 text-sm text-white/90">
                 Join thousands of local sellers and happy customers connecting
-                through Sahu Mart every day.
+                through RushCart every day.
               </p>
 
               <div className="flex items-center gap-3 mt-4 text-sm">

@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/navbar/Navbar";
-import Footer from "../../components/footer/Footer";
-import { getOrders } from "../../api/order.api";
+import { getSellerOrders, updateSellerOrderStatus } from "../../api/seller.api";
 import { Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function SellerOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -15,12 +15,22 @@ export default function SellerOrders() {
 
   const fetchOrders = async () => {
     try {
-      const response = await getOrders();
+      const response = await getSellerOrders();
       setOrders(response.data || []);
+      setMessage("");
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      setMessage(err?.response?.data?.detail || "Error fetching orders");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateStatus = async (orderId, status) => {
+    try {
+      await updateSellerOrderStatus(orderId, status);
+      fetchOrders();
+    } catch (err) {
+      setMessage(err?.response?.data?.detail || "Failed to update order status");
     }
   };
 
@@ -41,8 +51,10 @@ export default function SellerOrders() {
         return "bg-green-100 text-green-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
-      case "processing":
+      case "packed":
+      case "shipped":
         return "bg-blue-100 text-blue-800";
+      case "placed":
       default:
         return "bg-yellow-100 text-yellow-800";
     }
@@ -54,25 +66,20 @@ export default function SellerOrders() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
+      <RoleDashboardLayout role="seller" title="Order Management">
+        <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      </div>
+      </RoleDashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Orders</h1>
+    <RoleDashboardLayout role="seller" title="Order Management">
 
         {/* Filter */}
         <div className="flex gap-2 mb-6">
-          {["all", "processing", "shipped", "delivered", "cancelled"].map((status) => (
+          {["all", "placed", "packed", "shipped", "delivered", "cancelled"].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -86,6 +93,7 @@ export default function SellerOrders() {
             </button>
           ))}
         </div>
+        {message && <p className="text-sm text-red-600 mb-3">{message}</p>}
 
         {filteredOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -114,7 +122,7 @@ export default function SellerOrders() {
                   <div className="space-y-2">
                     {order.items?.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
-                        <span>{item.title} x {item.quantity}</span>
+                        <span>Product #{item.product_id} x {item.quantity}</span>
                         <span className="font-medium">₹{item.price * item.quantity}</span>
                       </div>
                     ))}
@@ -124,14 +132,30 @@ export default function SellerOrders() {
                 <div className="border-t pt-4 mt-4">
                   <p className="text-xl font-bold text-right">₹{order.total_amount || order.total}</p>
                 </div>
+                {order.status !== "delivered" && order.status !== "cancelled" && (
+                  <div className="border-t pt-3 mt-3 flex gap-2 justify-end">
+                    {order.status === "placed" && (
+                      <button
+                        onClick={() => updateStatus(order.id, "packed")}
+                        className="px-3 py-1 text-sm rounded bg-blue-600 text-white"
+                      >
+                        Mark Packed
+                      </button>
+                    )}
+                    {(order.status === "placed" || order.status === "packed") && (
+                      <button
+                        onClick={() => updateStatus(order.id, "shipped")}
+                        className="px-3 py-1 text-sm rounded bg-green-600 text-white"
+                      >
+                        Mark Shipped
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
-      </div>
-
-      <Footer />
-    </div>
+    </RoleDashboardLayout>
   );
 }
-

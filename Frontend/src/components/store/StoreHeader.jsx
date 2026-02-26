@@ -6,8 +6,8 @@ const StoreHeader = ({ store }) => {
     <div className="bg-white border-b">
       {/* Banner */}
       <div className="relative h-56 bg-gray-200">
-        <img src={"/store-banner.jpg" || store.banner_image}
-          alt={store.name}
+        <img src={store.cover_image || "/store-banner.jpg"}
+          alt={store.store_name}
           className="w-full h-full object-cover" />
       </div>
 
@@ -24,13 +24,12 @@ const StoreHeader = ({ store }) => {
         {/* Meta */}
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{store.name}</h1>
-            {store.is_open && <Badge>Open Now</Badge>}
+            <h1 className="text-2xl font-bold">{store.store_name}</h1>
+            {store.approved && <Badge>Open Now</Badge>}
           </div>
 
           <p className="text-sm text-gray-600 mt-1">
-            ⭐ {store.rating} ({store.review_count} reviews) •{" "}
-            {store.category}
+            ⭐ {store.average_rating} ({store.total_reviews} reviews)
           </p>
 
           <p className="text-sm text-gray-500 mt-1">

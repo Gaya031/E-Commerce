@@ -10,8 +10,8 @@ export const getStoreDetails = storeId => {
     return api.get(`/stores/${storeId}`);
 };
 
-export const getStoreProducts = storeId => {
-    return api.get(`/stores/${storeId}/products`);
+export const getStoreProducts = (storeId, params) => {
+    return api.get(`/stores/${storeId}/products`, { params });
 };
 
-export const getStoreBestSellers = storeId => api.get(`/stores/${storeId}/bestsellers`);
+export const getStoreBestSellers = (storeId, params) => api.get(`/stores/${storeId}/bestsellers`, { params });

@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="bg-white mt-16 border-t">
       <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-4 gap-6">
         <div>
-          <h4 className="font-bold">SahuMart</h4>
+          <h4 className="font-bold">RushCart</h4>
           <p className="text-sm text-gray-500 mt-2">
             Fast local delivery from trusted stores.
           </p>
@@ -23,7 +23,7 @@ export default function Footer() {
 
         <div>
           <h5 className="font-semibold">Contact</h5>
-          <p>help@sahumart.com</p>
+          <p>help@rushcart.com</p>
         </div>
       </div>
     </footer>

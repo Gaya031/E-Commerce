@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import (Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func)
+from sqlalchemy import (Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func, Float)
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.base import Base
 
@@ -23,6 +23,21 @@ class Seller(Base):
     )
     #Store Details
     store_name = Column(String(200), nullable=False)
+    description = Column(String(1000), nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    cover_image = Column(String(500), nullable=True)
+    
+    # Location fields for hyperlocal commerce
+    address = Column(String(500), nullable=True)
+    city = Column(String(100), nullable=True)
+    pincode = Column(String(20), nullable=True)
+    latitude = Column(String(50), nullable=True)
+    longitude = Column(String(50), nullable=True)
+    delivery_radius_km = Column(Integer, default=5)
+    
+    # Rating and reviews
+    total_reviews = Column(Integer, default=0)
+    average_rating = Column(Float, default=0.0)
     
     #Approval & KYC
     approved = Column(Boolean, default=False)

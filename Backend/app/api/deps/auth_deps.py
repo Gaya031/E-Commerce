@@ -22,7 +22,10 @@ async def get_current_user(user_id: int = Depends(get_current_user_id), db: Asyn
 def require_roles(*roles: str):
     async def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role not in roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Access deneid. Allowed roles: {roles}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Allowed roles: {roles}",
+            )
         return current_user
     return role_checker
 

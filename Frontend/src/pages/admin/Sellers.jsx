@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/navbar/Navbar";
-import Footer from "../../components/footer/Footer";
 import { getSellers, approveSeller, blockUser } from "../../api/admin.api";
 import { Users, CheckCircle, XCircle, Shield } from "lucide-react";
+import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function AdminSellers() {
   const [sellers, setSellers] = useState([]);
@@ -43,23 +42,18 @@ export default function AdminSellers() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
+      <RoleDashboardLayout role="admin" title="Seller Management">
+        <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      </div>
+      </RoleDashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <RoleDashboardLayout role="admin" title="Seller Management">
         <div className="flex items-center gap-2 mb-6">
           <Shield className="w-8 h-8 text-purple-600" />
-          <h1 className="text-2xl font-bold">Seller Management</h1>
         </div>
 
         {sellers.length === 0 ? (
@@ -140,10 +134,6 @@ export default function AdminSellers() {
             </table>
           </div>
         )}
-      </div>
-
-      <Footer />
-    </div>
+    </RoleDashboardLayout>
   );
 }
-

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/navbar/Navbar";
-import Footer from "../../components/footer/Footer";
-import { getAllOrders, refundOrder, decideReturn } from "../../api/admin.api";
-import { ShoppingBag, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { getAllOrders, refundOrder } from "../../api/admin.api";
+import { ShoppingBag, RefreshCw } from "lucide-react";
+import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -33,15 +32,6 @@ export default function AdminOrders() {
     }
   };
 
-  const handleReturnDecision = async (orderId, approved) => {
-    try {
-      await decideReturn(orderId, { approved });
-      fetchOrders();
-    } catch (err) {
-      console.error("Error deciding return:", err);
-    }
-  };
-
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "delivered":
@@ -61,23 +51,18 @@ export default function AdminOrders() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
+      <RoleDashboardLayout role="admin" title="Order Monitoring">
+        <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      </div>
+      </RoleDashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <RoleDashboardLayout role="admin" title="Order Monitoring">
         <div className="flex items-center gap-2 mb-6">
           <ShoppingBag className="w-8 h-8 text-purple-600" />
-          <h1 className="text-2xl font-bold">Order Management</h1>
         </div>
 
         {/* Filter */}
@@ -121,7 +106,7 @@ export default function AdminOrders() {
                   <div className="space-y-2">
                     {order.items?.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
-                        <span>{item.title} x {item.quantity}</span>
+                        <span>Product #{item.product_id} x {item.quantity}</span>
                         <span className="font-medium">₹{item.price * item.quantity}</span>
                       </div>
                     ))}
@@ -131,7 +116,7 @@ export default function AdminOrders() {
                 <div className="border-t pt-4 mt-4 flex justify-between items-center">
                   <p className="text-xl font-bold">₹{order.total_amount || order.total}</p>
                   <div className="flex gap-2">
-                    {order.status === "paid" && (
+                    {["delivered", "cancelled", "packed", "shipped"].includes((order.status || "").toLowerCase()) && (
                       <button 
                         onClick={() => handleRefund(order.id)}
                         className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
@@ -145,10 +130,6 @@ export default function AdminOrders() {
             ))}
           </div>
         )}
-      </div>
-
-      <Footer />
-    </div>
+    </RoleDashboardLayout>
   );
 }
-

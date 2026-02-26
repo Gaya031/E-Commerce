@@ -18,11 +18,32 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   async error => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config || {};
+    if (originalRequest.url?.includes("/auth/refresh")) {
+      useAuthStore.getState().clearAuth();
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
       try {
-        // backend refresh endpoint
-        await api.post("/auth/refresh");
-        return api(error.config);
+        const { refreshToken, setAccessToken } = useAuthStore.getState();
+        if (!refreshToken) {
+          throw new Error("No refresh token");
+        }
+        const res = await api.post("/auth/refresh", { refresh_token: refreshToken });
+        const newAccess = res?.data?.access_token;
+        const newRefresh = res?.data?.refresh_token;
+        if (!newAccess) {
+          throw new Error("Missing access token in refresh response");
+        }
+        setAccessToken(newAccess);
+        if (newRefresh) {
+          useAuthStore.getState().setAuth(null, newAccess, newRefresh);
+        }
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        return api(originalRequest);
       } catch {
         useAuthStore.getState().clearAuth();
         window.location.href = "/login";

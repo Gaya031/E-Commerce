@@ -30,6 +30,14 @@ def create_refresh_token(user_id: int) -> str:
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         token_type="refresh"
     )
+
+
+def create_reset_token(user_id: int) -> str:
+    return _create_token(
+        user_id=user_id,
+        expires_delta=timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES),
+        token_type="reset",
+    )
     
 def decode_token(token: str) -> Dict[str, Any]:
     try:

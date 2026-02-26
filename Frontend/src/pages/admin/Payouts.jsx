@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import Navbar from "../../components/navbar/Navbar";
-import Footer from "../../components/footer/Footer";
+import { useState } from "react";
 import { payoutSeller, payoutDeliveryPartner } from "../../api/admin.api";
 import { DollarSign, CheckCircle, Truck } from "lucide-react";
+import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
+import { pushToast } from "../../store/toast.store";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(false);
@@ -15,23 +15,19 @@ export default function AdminPayouts() {
       } else {
         await payoutDeliveryPartner(id);
       }
-      alert("Payout initiated successfully!");
+      pushToast({ type: "success", message: "Payout initiated successfully." });
     } catch (err) {
       console.error("Error initiating payout:", err);
-      alert("Failed to initiate payout");
+      pushToast({ type: "error", message: "Failed to initiate payout." });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <RoleDashboardLayout role="admin" title="Payout Management">
         <div className="flex items-center gap-2 mb-6">
           <DollarSign className="w-8 h-8 text-purple-600" />
-          <h1 className="text-2xl font-bold">Payout Management</h1>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -45,6 +41,7 @@ export default function AdminPayouts() {
               Process payouts to sellers after deducting platform commission.
             </p>
             <button 
+              onClick={() => handlePayout("seller", 1)}
               disabled={loading}
               className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
@@ -62,6 +59,7 @@ export default function AdminPayouts() {
               Process payouts to delivery partners for completed deliveries.
             </p>
             <button 
+              onClick={() => handlePayout("delivery", 1)}
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
@@ -69,10 +67,6 @@ export default function AdminPayouts() {
             </button>
           </div>
         </div>
-      </div>
-
-      <Footer />
-    </div>
+    </RoleDashboardLayout>
   );
 }
-

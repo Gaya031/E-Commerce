@@ -7,15 +7,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, ShoppingBag, Wallet, LogOut, Package } from "lucide-react";
+import { ShoppingBag, Wallet, LogOut, Package } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
+import { logout } from "../../api/auth.api";
 
 export default function ProfileDropdown() {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // noop
+    }
     clearAuth();
     navigate("/login");
   };
@@ -31,6 +37,24 @@ export default function ProfileDropdown() {
       default:
         return "/buyer";
     }
+  };
+
+  const getOrdersPath = () => {
+    switch (user?.role) {
+      case "seller":
+        return "/seller/orders";
+      case "admin":
+        return "/admin/orders";
+      case "delivery":
+        return "/delivery/assigned";
+      default:
+        return "/buyer/orders";
+    }
+  };
+
+  const getWalletPath = () => {
+    if (user?.role === "delivery") return "/delivery/earnings";
+    return "/buyer/wallet";
   };
 
   return (
@@ -55,14 +79,14 @@ export default function ProfileDropdown() {
           Dashboard
         </DropdownMenuItem>
         
-        <DropdownMenuItem onClick={() => navigate("/buyer/orders")}>
+        <DropdownMenuItem onClick={() => navigate(getOrdersPath())}>
           <ShoppingBag className="mr-2 h-4 w-4" />
-          My Orders
+          {user?.role === "delivery" ? "My Deliveries" : "My Orders"}
         </DropdownMenuItem>
         
-        <DropdownMenuItem onClick={() => navigate("/buyer/wallet")}>
+        <DropdownMenuItem onClick={() => navigate(getWalletPath())}>
           <Wallet className="mr-2 h-4 w-4" />
-          Wallet
+          {user?.role === "delivery" ? "Earnings" : "Wallet"}
           {user?.wallet_balance !== undefined && (
             <span className="ml-auto font-medium">₹{user.wallet_balance}</span>
           )}

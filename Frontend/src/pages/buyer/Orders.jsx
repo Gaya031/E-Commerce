@@ -108,7 +108,7 @@ export default function BuyerOrders() {
                   <div className="space-y-2">
                     {order.items?.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
-                        <span>{item.title} x {item.quantity}</span>
+                        <span>Product #{item.product_id} x {item.quantity}</span>
                         <span className="font-medium">₹{item.price * item.quantity}</span>
                       </div>
                     ))}
@@ -137,4 +137,3 @@ export default function BuyerOrders() {
     </div>
   );
 }
-

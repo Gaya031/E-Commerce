@@ -18,6 +18,32 @@ export const getAllOrders = () => {
   return api.get("/admin/orders");
 };
 
+export const getAdminUsers = () => {
+  return api.get("/admin/users");
+};
+
+export const getPendingReturns = () => {
+  return api.get("/admin/returns");
+};
+
+export const getRefundQueue = () => {
+  return api.get("/admin/refunds");
+};
+
+export const updateCommissionConfig = (sellerId, commissionPercent) => {
+  return api.patch("/admin/commission/config", null, {
+    params: { seller_id: sellerId, commission_percent: commissionPercent },
+  });
+};
+
+export const getRevenueAnalytics = () => {
+  return api.get("/admin/analytics/revenue");
+};
+
+export const exportReports = () => {
+  return api.get("/admin/reports/export");
+};
+
 export const refundOrder = (orderId) => {
   return api.post(`/admin/orders/${orderId}/refund`);
 };
@@ -39,4 +65,3 @@ export const payoutDeliveryPartner = (partnerId) => {
 export const calculateCommission = (orderId) => {
   return api.post(`/commissions/calculate/${orderId}`);
 };
-

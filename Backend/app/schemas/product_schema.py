@@ -25,13 +25,13 @@ class ProductOut(BaseModel):
     id: int
     seller_id: int
     title: str
-    description: Optional[str]
+    description: Optional[str] = None
     price: int
     stock: int
-    images: Optional[List]
-    category: Optional[str]
-    id_active: bool
-    average_rating: int
+    images: Optional[List] = None
+    category: Optional[str] = None
+    is_active: bool = True
+    average_rating: float = 0.0
     
     class Config:
         from_attributes = True

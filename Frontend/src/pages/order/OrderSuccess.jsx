@@ -63,7 +63,7 @@ const OrderSuccess = () => {
       <div className="flex justify-center gap-4 mt-10">
         <Button
           variant="outline"
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/buyer/orders")}
         >
           View Orders
         </Button>

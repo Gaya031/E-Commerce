@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/navbar/Navbar";
-import Footer from "../../components/footer/Footer";
-import { getSellerProducts, createProduct, updateProduct, updateStock } from "../../api/seller.api";
+import { getSellerProducts, createProduct, updateProduct, updateStock, deleteProduct } from "../../api/seller.api";
 import { Plus, Edit, Package, Trash2 } from "lucide-react";
+import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function SellerProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [message, setMessage] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -26,8 +26,9 @@ export default function SellerProducts() {
     try {
       const response = await getSellerProducts();
       setProducts(response.data || []);
+      setMessage("");
     } catch (err) {
-      console.error("Error fetching products:", err);
+      setMessage(err?.response?.data?.detail || "Error fetching products");
     } finally {
       setLoading(false);
     }
@@ -37,9 +38,12 @@ export default function SellerProducts() {
     e.preventDefault();
     try {
       const data = {
-        ...formData,
+        title: formData.title,
+        description: formData.description,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
+        category: formData.category,
+        images: formData.image ? [formData.image] : [],
       };
       
       if (editingProduct) {
@@ -53,7 +57,7 @@ export default function SellerProducts() {
       setFormData({ title: "", description: "", price: "", stock: "", category: "", image: "" });
       fetchProducts();
     } catch (err) {
-      console.error("Error saving product:", err);
+      setMessage(err?.response?.data?.detail || "Error saving product");
     }
   };
 
@@ -65,36 +69,42 @@ export default function SellerProducts() {
       price: product.price?.toString() || "",
       stock: product.stock?.toString() || "",
       category: product.category || "",
-      image: product.image || "",
+      image: product.images?.[0] || "",
     });
     setShowModal(true);
   };
 
   const handleStockUpdate = async (productId, newStock) => {
     try {
-      await updateStock(productId, { stock: newStock });
+      await updateStock(productId, { stock: Number(newStock) });
       fetchProducts();
     } catch (err) {
-      console.error("Error updating stock:", err);
+      setMessage(err?.response?.data?.detail || "Error updating stock");
+    }
+  };
+
+  const handleDelete = async (productId) => {
+    if (!window.confirm("Delete this product?")) return;
+    try {
+      await deleteProduct(productId);
+      fetchProducts();
+    } catch (err) {
+      setMessage(err?.response?.data?.detail || "Error deleting product");
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
+      <RoleDashboardLayout role="seller" title="My Products">
+        <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      </div>
+      </RoleDashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <RoleDashboardLayout role="seller" title="My Products">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">My Products</h1>
           <button 
@@ -108,6 +118,7 @@ export default function SellerProducts() {
             <Plus className="w-4 h-4" /> Add Product
           </button>
         </div>
+        {message && <p className="text-sm text-red-600 mb-3">{message}</p>}
 
         {products.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -131,8 +142,8 @@ export default function SellerProducts() {
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {product.image && (
-                          <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                        {product.images?.[0] && (
+                          <img src={product.images[0]} alt={product.title} className="w-12 h-12 object-cover rounded" />
                         )}
                         <div>
                           <p className="font-medium">{product.title}</p>
@@ -144,7 +155,7 @@ export default function SellerProducts() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button 
-                          onClick={() => handleStockUpdate(product.id, product.stock - 1)}
+                          onClick={() => handleStockUpdate(product.id, Math.max(0, product.stock - 1))}
                           className="w-8 h-8 rounded bg-gray-100 hover:bg-gray-200"
                         >
                           -
@@ -159,12 +170,20 @@ export default function SellerProducts() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <button 
-                        onClick={() => handleEdit(product)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -172,7 +191,7 @@ export default function SellerProducts() {
             </table>
           </div>
         )}
-      </div>
+      
 
       {/* Modal */}
       {showModal && (
@@ -261,9 +280,6 @@ export default function SellerProducts() {
           </div>
         </div>
       )}
-
-      <Footer />
-    </div>
+    </RoleDashboardLayout>
   );
 }
-

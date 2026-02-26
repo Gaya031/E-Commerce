@@ -1,11 +1,30 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.auth_schema import (UserCreate, UserOut, TokenPair, UserIn)
+from app.schemas.auth_schema import (
+    UserCreate,
+    UserOut,
+    TokenPair,
+    UserIn,
+    RefreshTokenIn,
+    ForgotPasswordIn,
+    ResetPasswordIn,
+)
 from app.db.postgres import get_db
-from app.services.auth_service import (create_user, authenticate_user, create_tokens_for_user, refresh_access_token, logout_user, get_user_by_email)
+from app.services.auth_service import (
+    create_user,
+    authenticate_user,
+    create_tokens_for_user,
+    refresh_access_token,
+    logout_user,
+    get_user_by_email,
+    request_password_reset,
+    reset_password,
+)
 from app.api.deps.auth_deps import get_current_user
 from app.models.user_model import User
 from app.utils.rate_limiter import RateLimiter
+from app.utils.email_handler import send_email_background
+from app.utils.email_templates import password_reset_email, welcome_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,13 +35,14 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     user = await create_user(db, user_in)
+    subject, body = welcome_email(user.name)
+    send_email_background(user.email, subject, body)
     return user
 
 
 login_rate_limit = RateLimiter(limit=5, window_seconds=60, key_prefix="login")
 @router.post("/login", dependencies=[Depends(login_rate_limit)], response_model=TokenPair)
 async def login(data: UserIn, db: AsyncSession = Depends(get_db)):
-    print("data recieved")
     user = await authenticate_user(db, data.email, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
@@ -32,17 +52,32 @@ async def login(data: UserIn, db: AsyncSession = Depends(get_db)):
 
 refresh_rate_limit = RateLimiter(limit=10, window_seconds=300, key_prefix="refresh")
 @router.post("/refresh", dependencies=[Depends(refresh_rate_limit)], response_model=TokenPair)
-async def refresh(tokens: dict, db: AsyncSession = Depends(get_db)):
-    refresh_token = tokens.get("refresh_token")
-    if not refresh_token:
-        raise HTTPException(status_code=400, detail="Missing refresh token")
-    access, new_refresh = await refresh_access_token(db, refresh_token)
+async def refresh(tokens: RefreshTokenIn, db: AsyncSession = Depends(get_db)):
+    access, new_refresh = await refresh_access_token(db, tokens.refresh_token)
     if not access:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-    return TokenPair(access_token=access, refresh_token=refresh )
+    return TokenPair(access_token=access, refresh_token=new_refresh)
 
 
-
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 async def logout(current_user: User = Depends(get_current_user)):
     await logout_user(current_user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordIn, db: AsyncSession = Depends(get_db)):
+    token, user = await request_password_reset(db, data.email)
+    if token and user:
+        subject, body = password_reset_email(user.name, token)
+        send_email_background(user.email, subject, body)
+    # Never leak reset token in API response.
+    return {"message": "If the email exists, reset instructions were generated."}
+
+
+@router.post("/reset-password")
+async def reset_password_route(data: ResetPasswordIn, db: AsyncSession = Depends(get_db)):
+    ok = await reset_password(db, data.token, data.new_password)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    return {"message": "Password reset successful"}
