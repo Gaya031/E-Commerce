@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function PromoSlide() {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-white rounded-xl p-10 grid grid-cols-2 gap-6">
       <div>
@@ -15,8 +18,8 @@ export default function PromoSlide() {
         </p>
 
         <div className="mt-6 flex gap-4">
-          <Button>Shop Now</Button>
-          <Button variant="outline">View Offers</Button>
+          <Button onClick={() => navigate("/products")}>Shop Now</Button>
+          <Button variant="outline" onClick={() => navigate("/products?offers=1")}>View Offers</Button>
         </div>
       </div>
 

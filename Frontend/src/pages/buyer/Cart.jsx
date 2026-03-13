@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 const Cart = () => {
   const items = useCartStore(s => s.items);
   const updateQuantity = useCartStore(s => s.updateQuantity);
-  const total = useCartStore(s => s.totalAmount);
+  const total = useCartStore((s) =>
+    s.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  );
 
   if (!items.length)
     return <p className="p-6">Cart is empty</p>;
@@ -49,7 +51,7 @@ const Cart = () => {
       ))}
 
       <div className="mt-6 font-semibold">
-        Total: ₹{total()}
+        Total: ₹{total}
       </div>
 
       <Button className="mt-4 w-full">

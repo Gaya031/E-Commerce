@@ -21,6 +21,12 @@ export const getSellerProducts = () => {
   return api.get("/products/mine");
 };
 
+export const uploadProductImage = (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post("/products/upload-image", formData);
+};
+
 // Seller - Profile
 export const createSellerProfile = (data) => {
   return api.post("/sellers/", data);

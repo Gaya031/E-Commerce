@@ -55,8 +55,7 @@ async def refund(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_roles("admin")),
 ):
-    await refund_order(db, order_id)
-    return {"status": "refund initiated"}
+    return await refund_order(db, order_id)
 
 
 @router.get("/sellers")
@@ -205,17 +204,33 @@ async def revenue_analytics(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_roles("admin")),
 ):
-    total_orders = await db.execute(select(func.count(Order.id)))
-    delivered_orders = await db.execute(
-        select(func.count(Order.id)).where(Order.status == OrderStatus.delivered)
+    metrics = await db.execute(
+        select(
+            select(func.count(Seller.id)).scalar_subquery().label("total_sellers"),
+            select(func.count(User.id)).where(User.is_blocked.is_(False)).scalar_subquery().label("active_users"),
+            select(func.count(Order.id)).scalar_subquery().label("total_orders"),
+            select(func.count(Order.id))
+            .where(Order.status == OrderStatus.delivered)
+            .scalar_subquery()
+            .label("delivered_orders"),
+            select(func.coalesce(func.sum(Order.total_amount), 0))
+            .where(Order.status != OrderStatus.cancelled)
+            .scalar_subquery()
+            .label("gross_revenue"),
+            select(func.coalesce(func.sum(Commission.commission_amount), 0))
+            .scalar_subquery()
+            .label("platform_commission"),
+        )
     )
-    gross_revenue = await db.execute(select(func.coalesce(func.sum(Order.total_amount), 0)))
-    platform_commission = await db.execute(select(func.coalesce(func.sum(Commission.commission_amount), 0)))
+    row = metrics.one()
     return {
-        "total_orders": int(total_orders.scalar() or 0),
-        "delivered_orders": int(delivered_orders.scalar() or 0),
-        "gross_revenue": int(gross_revenue.scalar() or 0),
-        "platform_commission": int(platform_commission.scalar() or 0),
+        "total_sellers": int(row.total_sellers or 0),
+        "active_users": int(row.active_users or 0),
+        "total_orders": int(row.total_orders or 0),
+        "delivered_orders": int(row.delivered_orders or 0),
+        "gross_revenue": int(row.gross_revenue or 0),
+        "total_revenue": int(row.gross_revenue or 0),
+        "platform_commission": int(row.platform_commission or 0),
     }
 
 

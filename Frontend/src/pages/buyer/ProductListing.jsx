@@ -9,6 +9,7 @@ import { searchProducts as searchProductsApi } from "../../api/search.api";
 export default function ProductListing() {
   const [searchParams] = useSearchParams();
   const query = (searchParams.get("q") || "").trim();
+  const offersOnly = searchParams.get("offers") === "1";
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,13 @@ export default function ProductListing() {
 
         const res = await getAllProducts();
         if (!mounted) return;
-        setProducts(Array.isArray(res.data) ? res.data : []);
+        const rows = Array.isArray(res.data) ? res.data : [];
+        if (offersOnly) {
+          const sorted = [...rows].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+          setProducts(sorted.slice(0, 20));
+          return;
+        }
+        setProducts(rows);
       } catch (err) {
         if (!mounted) return;
         setError(err?.response?.data?.detail || "Failed to load products");
@@ -54,9 +61,13 @@ export default function ProductListing() {
     return () => {
       mounted = false;
     };
-  }, [query]);
+  }, [offersOnly, query]);
 
-  const title = useMemo(() => (query ? `Search results for "${query}"` : "All Products"), [query]);
+  const title = useMemo(() => {
+    if (query) return `Search results for "${query}"`;
+    if (offersOnly) return "Best Offers";
+    return "All Products";
+  }, [offersOnly, query]);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -198,12 +198,15 @@ async def verify_payment(db: AsyncSession, payload: dict, signature: str):
         await _notify_payment_success(db, order)
 
 
-async def initiate_refund(db: AsyncSession, order_id: int):
+async def initiate_refund(db: AsyncSession, order_id: int) -> dict:
     result = await db.execute(select(Payment).where(Payment.order_id == order_id))
     payment = result.scalars().first()
 
     if not payment:
         raise NotFoundException("Payment not found")
+
+    if payment.status == PaymentStatus.refunded:
+        return {"payment_id": payment.id, "status": payment.status.value, "refund_status": "already_refunded"}
 
     if payment.status != PaymentStatus.completed:
         raise ConflictException("Payment not refundable")
@@ -216,3 +219,5 @@ async def initiate_refund(db: AsyncSession, order_id: int):
 
     payment.status = PaymentStatus.refunded
     await db.commit()
+    await db.refresh(payment)
+    return {"payment_id": payment.id, "status": payment.status.value, "refund_status": "processed"}

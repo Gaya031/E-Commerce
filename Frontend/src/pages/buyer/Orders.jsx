@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/navbar/Navbar";
 import Footer from "../../components/footer/Footer";
-import { getOrders } from "../../api/order.api";
+import { cancelOrder, getOrders } from "../../api/order.api";
 import { Package, ArrowRight, Clock, CheckCircle, XCircle } from "lucide-react";
+import { pushToast } from "../../store/toast.store";
 
 export default function BuyerOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -16,13 +18,43 @@ export default function BuyerOrders() {
 
   const fetchOrders = async () => {
     try {
-      const response = await getOrders();
+      const response = await getOrders({ page: 1, size: 50, include_items: true });
       setOrders(response.data || []);
     } catch (err) {
       console.error("Error fetching orders:", err);
       setError("Failed to load orders");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const canCancel = (status) => {
+    const normalized = String(status || "").toLowerCase();
+    return normalized === "placed" || normalized === "packed";
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm("Cancel this order?")) return;
+    setCancellingOrderId(orderId);
+    try {
+      const response = await cancelOrder(orderId);
+      const refundStatus = response?.data?.refund_status;
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: "cancelled", can_cancel: false } : order
+        )
+      );
+      const refundMessage =
+        refundStatus === "initiated"
+          ? " Refund has been initiated."
+          : refundStatus === "failed"
+            ? " Refund initiation failed and will be handled manually."
+            : "";
+      pushToast({ type: "success", message: `Order cancelled successfully.${refundMessage}` });
+    } catch (err) {
+      pushToast({ type: "error", message: err?.response?.data?.detail || "Failed to cancel order." });
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -120,12 +152,24 @@ export default function BuyerOrders() {
                     <p className="text-sm text-gray-500">Total</p>
                     <p className="text-xl font-bold">₹{order.total_amount || order.total}</p>
                   </div>
-                  <Link 
-                    to={`/order/${order.id}`}
-                    className="flex items-center gap-2 text-green-600 hover:text-green-700"
-                  >
-                    View Details <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {canCancel(order.status) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(order.id)}
+                        disabled={cancellingOrderId === order.id}
+                        className="px-3 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60"
+                      >
+                        {cancellingOrderId === order.id ? "Cancelling..." : "Cancel Order"}
+                      </button>
+                    )}
+                    <Link
+                      to={`/order/${order.id}`}
+                      className="flex items-center gap-2 text-green-600 hover:text-green-700"
+                    >
+                      View Details <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}

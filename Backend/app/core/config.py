@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     SMTP_USE_SSL: bool = False
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # Bootstrap admin
+    ADMIN_EMAIL: str = "admin@rushcart.com"
+    ADMIN_PASSWORD: str = "Admin@123"
+    ADMIN_NAME: str = "RushCart Admin"
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8"

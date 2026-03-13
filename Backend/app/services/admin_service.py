@@ -4,14 +4,14 @@ from app.models.user_model import User
 from app.models.seller_model import Seller, SellerKYCStatus
 from app.models.order_model import Order, ReturnStatus
 from app.models.notification_model import NotificationType
-from app.services.payment_service import initiate_refund
+from app.services.refund_service import process_refund
 from app.core.exceptions import(NotFoundException, ConflictException)
 from app.core.logging import logger
 from app.services.notification_service import create_notification
 from app.services.search_service import upsert_store_document
 from app.utils.simple_cache import cache_delete_prefix
 from app.utils.email_handler import send_email_background
-from app.utils.email_templates import order_status_email, refund_email, seller_approval_email
+from app.utils.email_templates import order_status_email, seller_approval_email
 
 
 async def block_user(db: AsyncSession, user_id: int, blocked: bool) -> User:
@@ -92,26 +92,9 @@ async def decide_return(db: AsyncSession, order_id: int, approved: bool) -> Orde
     return order
 
 
-async def refund_order(db: AsyncSession, order_id: int):
+async def refund_order(db: AsyncSession, order_id: int) -> dict:
     order = await db.get(Order, order_id)
     if not order:
         raise NotFoundException("Order not found")
-    if not order.is_returned:
-        raise ConflictException("Order not returned")
-    
-    await initiate_refund(db, order_id)
-    user = await db.get(User, order.buyer_id)
-    if user:
-        await create_notification(
-            db=db,
-            user_id=user.id,
-            data={
-                "title": f"Refund initiated for order #{order.id}",
-                "message": "Your refund is being processed.",
-                "type": NotificationType.payment,
-                "link": "/buyer/orders",
-            },
-        )
-        subject, body = refund_email(user.name, order.id)
-        send_email_background(user.email, subject, body)
+    return await process_refund(db, order_id)
     

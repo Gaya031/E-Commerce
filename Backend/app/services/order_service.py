@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +10,8 @@ from app.models.payment_model import Payment, PaymentStatus
 from app.models.product_model import Product
 from app.services.payment_service import initiate_refund
 from app.utils.simple_cache import cache_delete_prefix
+
+logger = logging.getLogger(__name__)
 
 
 async def create_order(db: AsyncSession, buyer_id: int, payload) -> Order:
@@ -115,9 +118,13 @@ async def cancel_order(db: AsyncSession, order_id: int, user_id: int) -> tuple[O
         payment_result = await db.execute(select(Payment).where(Payment.order_id == order.id))
         payment = payment_result.scalars().first()
         if payment and payment.status == PaymentStatus.completed:
-            order.status = OrderStatus.cancelled
-            await initiate_refund(db, order.id)
-            refund_status = "initiated"
+            try:
+                order.status = OrderStatus.cancelled
+                await initiate_refund(db, order.id)
+                refund_status = "initiated"
+            except Exception as exc:
+                logger.warning("Refund initiation failed for order %s: %s", order.id, str(exc))
+                refund_status = "failed"
         elif payment and payment.status == PaymentStatus.initiated:
             payment.status = PaymentStatus.failed
 

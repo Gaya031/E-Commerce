@@ -15,6 +15,7 @@ class AddressSchema(BaseModel):
     pincode: str
     coordinates: Optional[Dict] = None
     delivery_mode: Optional[str] = "instant"
+    delivery_slot: Optional[str] = None
     
 class OrderCreate(BaseModel):
     seller_id: int

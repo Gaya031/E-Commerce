@@ -12,12 +12,12 @@ async def create_review(db: AsyncSession, buyer_id: int, product_id: int, rating
         .join(Order, OrderItem.order_id == Order.id)
         .where(
             Order.buyer_id == buyer_id, 
-            Order.status == OrderStatus.delivered,
+            Order.status.in_([OrderStatus.placed, OrderStatus.packed, OrderStatus.shipped, OrderStatus.delivered]),
             OrderItem.product_id == product_id
             )
         )
     if not result.scalars().first():
-        raise PermissionDeniedException("You can only review purchased products")
+        raise PermissionDeniedException("You can only review products from your valid orders")
     
     existing = await db.execute(
         select(Review).where(

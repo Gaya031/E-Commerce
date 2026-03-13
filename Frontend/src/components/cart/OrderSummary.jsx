@@ -7,13 +7,17 @@ const DELIVERY_FEE = 20;
 const TAX = 5;
 const FREE_DELIVERY_THRESHOLD = 200;
 const OrderSummary = () => {
-  const total = useCartStore(s => s.totalAmount)();
+  const total = useCartStore((s) =>
+    s.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  );
   const navigate = useNavigate();
+  const hasItems = total > 0;
 
   const delivery =
-    total >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+    hasItems ? (total >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE) : 0;
+  const taxes = hasItems ? TAX : 0;
 
-  const finalTotal = total + delivery + TAX;
+  const finalTotal = total + delivery + taxes;
 
   return (
     <div className="bg-white p-6 rounded-xl sticky top-28">
@@ -30,7 +34,7 @@ const OrderSummary = () => {
         </div>
         <div className="flex justify-between">
           <span>Taxes & Fees</span>
-          <span>₹{TAX}</span>
+          <span>₹{taxes}</span>
         </div>
       </div>
 
@@ -42,6 +46,7 @@ const OrderSummary = () => {
       <Button
         className="w-full mt-6"
         onClick={() => navigate("/checkout")}
+        disabled={!hasItems}
       >
         Proceed to Checkout →
       </Button>

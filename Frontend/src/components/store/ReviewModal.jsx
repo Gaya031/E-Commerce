@@ -24,7 +24,13 @@ export default function ReviewModal({ open, onClose, productId, onSubmitted }) {
       onSubmitted?.();
       onClose?.();
     } catch (err) {
-      pushToast({ type: "error", message: err?.response?.data?.detail || "Failed to submit review." });
+      pushToast({
+        type: "error",
+        message:
+          err?.response?.data?.detail ||
+          err?.response?.data?.error?.message ||
+          "Failed to submit review.",
+      });
     } finally {
       setLoading(false);
     }

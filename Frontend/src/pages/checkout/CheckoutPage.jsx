@@ -9,6 +9,7 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("prepaid");
   const [deliveryMode, setDeliveryMode] = useState("instant");
+  const [deliverySlot, setDeliverySlot] = useState(null);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -17,12 +18,17 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-12 gap-8 mt-6">
         <div className="col-span-8 space-y-6">
           <AddressSection onAddressSelect={setSelectedAddress} />
-          <DeliverySchedule onModeChange={setDeliveryMode} />
+          <DeliverySchedule onModeChange={setDeliveryMode} onSlotChange={setDeliverySlot} />
           <PaymentMethod onMethodSelect={setPaymentMethod} />
         </div>
 
         <div className="col-span-4">
-          <OrderSummary address={selectedAddress} paymentMethod={paymentMethod} deliveryMode={deliveryMode} />
+          <OrderSummary
+            address={selectedAddress}
+            paymentMethod={paymentMethod}
+            deliveryMode={deliveryMode}
+            deliverySlot={deliverySlot}
+          />
         </div>
       </div>
     </div>

@@ -18,7 +18,11 @@ export default function SubmitReview() {
       setMessage("Review submitted");
       setTimeout(() => navigate("/"), 700);
     } catch (err) {
-      setMessage(err?.response?.data?.detail || "Failed to submit review");
+      setMessage(
+        err?.response?.data?.detail ||
+          err?.response?.data?.error?.message ||
+          "Failed to submit review"
+      );
     }
   };
 

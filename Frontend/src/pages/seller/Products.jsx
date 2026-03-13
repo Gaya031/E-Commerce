@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { getSellerProducts, createProduct, updateProduct, updateStock, deleteProduct } from "../../api/seller.api";
+import {
+  getSellerProducts,
+  createProduct,
+  updateProduct,
+  updateStock,
+  deleteProduct,
+  uploadProductImage,
+} from "../../api/seller.api";
 import { Plus, Edit, Package, Trash2 } from "lucide-react";
 import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
@@ -15,12 +22,25 @@ export default function SellerProducts() {
     price: "",
     stock: "",
     category: "",
-    image: "",
+    imageUrl: "",
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [imageFile]);
 
   const fetchProducts = async () => {
     try {
@@ -36,14 +56,21 @@ export default function SellerProducts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
+      let imageUrl = (formData.imageUrl || "").trim();
+      if (imageFile) {
+        const uploadRes = await uploadProductImage(imageFile);
+        imageUrl = uploadRes?.data?.url || uploadRes?.data?.path || "";
+      }
+
       const data = {
         title: formData.title,
         description: formData.description,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
+        price: Number(formData.price),
+        stock: Number(formData.stock),
         category: formData.category,
-        images: formData.image ? [formData.image] : [],
+        images: imageUrl ? [imageUrl] : [],
       };
       
       if (editingProduct) {
@@ -54,10 +81,13 @@ export default function SellerProducts() {
       
       setShowModal(false);
       setEditingProduct(null);
-      setFormData({ title: "", description: "", price: "", stock: "", category: "", image: "" });
+      setImageFile(null);
+      setFormData({ title: "", description: "", price: "", stock: "", category: "", imageUrl: "" });
       fetchProducts();
     } catch (err) {
       setMessage(err?.response?.data?.detail || "Error saving product");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -69,8 +99,9 @@ export default function SellerProducts() {
       price: product.price?.toString() || "",
       stock: product.stock?.toString() || "",
       category: product.category || "",
-      image: product.images?.[0] || "",
+      imageUrl: product.images?.[0] || "",
     });
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -110,7 +141,8 @@ export default function SellerProducts() {
           <button 
             onClick={() => {
               setEditingProduct(null);
-              setFormData({ title: "", description: "", price: "", stock: "", category: "", image: "" });
+              setImageFile(null);
+              setFormData({ title: "", description: "", price: "", stock: "", category: "", imageUrl: "" });
               setShowModal(true);
             }}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
@@ -252,28 +284,41 @@ export default function SellerProducts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
+                <label className="block text-sm font-medium mb-1">Product Image</label>
                 <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="https://example.com/image.jpg"
                 />
+                {formData.imageUrl && !imageFile && (
+                  <p className="mt-1 text-xs text-gray-500">Current image will be kept unless you upload a new one.</p>
+                )}
+                {(imageFile || formData.imageUrl) && (
+                  <img
+                    src={imagePreview || formData.imageUrl}
+                    alt="Product preview"
+                    className="mt-2 h-20 w-20 object-cover rounded border"
+                  />
+                )}
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setSaving(false);
+                  }}
                   className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={saving}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  {editingProduct ? "Update" : "Add"} Product
+                  {saving ? "Saving..." : `${editingProduct ? "Update" : "Add"} Product`}
                 </button>
               </div>
             </form>

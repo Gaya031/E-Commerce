@@ -4,7 +4,9 @@ import { useCartStore } from "../../store/cart.store";
 const FREE_DELIVERY_THRESHOLD = 200;
 
 const FreeDeliveryProgress = () => {
-  const total = useCartStore(s => s.totalAmount)();
+  const total = useCartStore((s) =>
+    s.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  );
   const remaining = Math.max(FREE_DELIVERY_THRESHOLD - total, 0);
   const percent = Math.min((total / FREE_DELIVERY_THRESHOLD) * 100, 100);
 

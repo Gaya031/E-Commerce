@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingBag, Wallet, Clock3, CheckCircle2, ArrowRight } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
-import { getOrders } from "../../api/order.api";
+import { getOrderSummary } from "../../api/order.api";
 import { getWallet } from "../../api/wallet.api";
 import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function BuyerDashboard() {
   const user = useAuthStore((s) => s.user);
-  const [orders, setOrders] = useState([]);
+  const [summary, setSummary] = useState({
+    total_orders: 0,
+    active_orders: 0,
+    delivered_orders: 0,
+    recent_orders: [],
+  });
   const [walletBalance, setWalletBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -17,12 +22,17 @@ export default function BuyerDashboard() {
 
     const loadData = async () => {
       try {
-        const [ordersRes, walletRes] = await Promise.allSettled([getOrders(), getWallet()]);
+        const [summaryRes, walletRes] = await Promise.allSettled([getOrderSummary(), getWallet()]);
 
         if (!mounted) return;
 
-        if (ordersRes.status === "fulfilled") {
-          setOrders(Array.isArray(ordersRes.value.data) ? ordersRes.value.data : []);
+        if (summaryRes.status === "fulfilled") {
+          setSummary({
+            total_orders: Number(summaryRes.value?.data?.total_orders ?? 0),
+            active_orders: Number(summaryRes.value?.data?.active_orders ?? 0),
+            delivered_orders: Number(summaryRes.value?.data?.delivered_orders ?? 0),
+            recent_orders: Array.isArray(summaryRes.value?.data?.recent_orders) ? summaryRes.value.data.recent_orders : [],
+          });
         }
 
         if (walletRes.status === "fulfilled") {
@@ -41,16 +51,14 @@ export default function BuyerDashboard() {
     };
   }, []);
 
-  const stats = useMemo(() => {
-    const totalOrders = orders.length;
-    const activeOrders = orders.filter((o) => {
-      const status = String(o.status || "").toLowerCase();
-      return status && status !== "delivered" && status !== "cancelled";
-    }).length;
-    const deliveredOrders = orders.filter((o) => String(o.status || "").toLowerCase() === "delivered").length;
-
-    return { totalOrders, activeOrders, deliveredOrders };
-  }, [orders]);
+  const stats = useMemo(
+    () => ({
+      totalOrders: Number(summary.total_orders || 0),
+      activeOrders: Number(summary.active_orders || 0),
+      deliveredOrders: Number(summary.delivered_orders || 0),
+    }),
+    [summary]
+  );
 
   return (
     <RoleDashboardLayout role="buyer" title="Buyer Dashboard">
@@ -125,11 +133,11 @@ export default function BuyerDashboard() {
           <h2 className="text-lg font-semibold mb-4">Recent Order Snapshot</h2>
           {loading ? (
             <p className="text-gray-500">Loading orders...</p>
-          ) : orders.length === 0 ? (
+          ) : summary.recent_orders.length === 0 ? (
             <p className="text-gray-500">No orders yet. Place your first order from nearby stores.</p>
           ) : (
             <div className="space-y-2">
-              {orders.slice(0, 3).map((order) => (
+              {summary.recent_orders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
                   <span>Order #{order.id}</span>
                   <span className="capitalize text-gray-600">{order.status || "placed"}</span>

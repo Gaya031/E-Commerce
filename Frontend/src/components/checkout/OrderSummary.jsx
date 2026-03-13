@@ -31,10 +31,12 @@ const ensureRazorpayLoaded = async () => {
   return Boolean(window.Razorpay);
 };
 
-const OrderSummary = ({ address, paymentMethod, deliveryMode }) => {
+const OrderSummary = ({ address, paymentMethod, deliveryMode, deliverySlot }) => {
   const items = useCartStore(s => s.items);
   const storeId = useCartStore(s => s.storeId);
-  const subtotal = useCartStore(s => s.totalAmount)();
+  const subtotal = useCartStore((s) =>
+    s.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  );
   const clearCart = useCartStore(s => s.clearCart);
   const navigate = useNavigate();
 
@@ -43,6 +45,10 @@ const OrderSummary = ({ address, paymentMethod, deliveryMode }) => {
   const placeOrder = async () => {
     if (!address) {
       pushToast({ type: "warning", message: "Please select address first." });
+      return;
+    }
+    if (deliveryMode === "scheduled" && !deliverySlot) {
+      pushToast({ type: "warning", message: "Please select a delivery time slot." });
       return;
     }
 
@@ -63,6 +69,7 @@ const OrderSummary = ({ address, paymentMethod, deliveryMode }) => {
               ? { lat: address.latitude, lng: address.longitude }
               : null,
           delivery_mode: deliveryMode || "instant",
+          delivery_slot: deliveryMode === "scheduled" ? deliverySlot : null,
         },
       };
 

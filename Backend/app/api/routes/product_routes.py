@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +17,20 @@ from app.services.product_service import (
     update_product,
     update_stock,
 )
+from app.utils.file_upload import upload_file
 
 router = APIRouter(tags=["products"])
+
+
+@router.post("/upload-image")
+async def upload_product_image(
+    request: Request,
+    file: UploadFile = File(...),
+    _seller: User = Depends(require_roles("seller")),
+):
+    image_path = await upload_file(file=file, sub_dir="products")
+    base_url = str(request.base_url).rstrip("/")
+    return {"url": f"{base_url}{image_path}", "path": image_path}
 
 
 @router.post("/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
