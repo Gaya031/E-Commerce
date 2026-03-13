@@ -10,6 +10,13 @@ import {
 import { Plus, Edit, Package, Trash2 } from "lucide-react";
 import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
+const extractErrorMessage = (err, fallback) =>
+  err?.response?.data?.detail ||
+  err?.response?.data?.error?.message ||
+  err?.response?.data?.message ||
+  err?.message ||
+  fallback;
+
 export default function SellerProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +55,7 @@ export default function SellerProducts() {
       setProducts(response.data || []);
       setMessage("");
     } catch (err) {
-      setMessage(err?.response?.data?.detail || "Error fetching products");
+      setMessage(extractErrorMessage(err, "Error fetching products"));
     } finally {
       setLoading(false);
     }
@@ -60,8 +67,13 @@ export default function SellerProducts() {
     try {
       let imageUrl = (formData.imageUrl || "").trim();
       if (imageFile) {
-        const uploadRes = await uploadProductImage(imageFile);
-        imageUrl = uploadRes?.data?.url || uploadRes?.data?.path || "";
+        try {
+          const uploadRes = await uploadProductImage(imageFile);
+          imageUrl = uploadRes?.data?.url || uploadRes?.data?.path || "";
+        } catch (uploadErr) {
+          setMessage(extractErrorMessage(uploadErr, "Image upload failed"));
+          return;
+        }
       }
 
       const data = {
@@ -85,7 +97,7 @@ export default function SellerProducts() {
       setFormData({ title: "", description: "", price: "", stock: "", category: "", imageUrl: "" });
       fetchProducts();
     } catch (err) {
-      setMessage(err?.response?.data?.detail || "Error saving product");
+      setMessage(extractErrorMessage(err, "Error saving product"));
     } finally {
       setSaving(false);
     }
@@ -110,7 +122,7 @@ export default function SellerProducts() {
       await updateStock(productId, { stock: Number(newStock) });
       fetchProducts();
     } catch (err) {
-      setMessage(err?.response?.data?.detail || "Error updating stock");
+      setMessage(extractErrorMessage(err, "Error updating stock"));
     }
   };
 
@@ -120,7 +132,7 @@ export default function SellerProducts() {
       await deleteProduct(productId);
       fetchProducts();
     } catch (err) {
-      setMessage(err?.response?.data?.detail || "Error deleting product");
+      setMessage(extractErrorMessage(err, "Error deleting product"));
     }
   };
 

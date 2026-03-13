@@ -4,6 +4,7 @@ import { useAuthStore } from "./auth.store";
 import { clearServerCart, getServerCart, replaceServerCart, syncServerCart } from "../api/cart.api";
 
 const CART_KEY = "rushcart_cart";
+const SAVED_ITEMS_KEY = "rushcart_saved_items";
 
 const getEmptyCart = () => ({
   storeId: null,
@@ -36,8 +37,33 @@ const loadCart = () => {
   }
 };
 
+const loadSavedItems = () => {
+  try {
+    const raw = localStorage.getItem(SAVED_ITEMS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((i) => ({
+        productId: i.productId ?? i.product_id,
+        title: i.title,
+        price: Number(i.price) || 0,
+        image: i.image || "/product.jpg",
+        quantity: Number(i.quantity) || 1,
+        storeId: i.storeId ?? i.store_id ?? null,
+      }))
+      .filter((i) => Number.isFinite(i.productId));
+  } catch {
+    return [];
+  }
+};
+
 const persistLocal = (cart) => {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
+};
+
+const persistSavedItems = (items) => {
+  localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(items));
 };
 
 const toServerPayload = (cart) => ({
@@ -53,6 +79,7 @@ const toServerPayload = (cart) => ({
 
 export const useCartStore = create((set, get) => ({
   ...loadCart(),
+  savedItems: loadSavedItems(),
 
   setCart: (cart) => {
     const normalized = normalizeCart(cart);
@@ -138,8 +165,10 @@ export const useCartStore = create((set, get) => ({
         ];
 
     const updatedCart = { storeId, items };
+    const savedItems = get().savedItems.filter((i) => i.productId !== product.id);
     persistLocal(updatedCart);
-    set(updatedCart);
+    persistSavedItems(savedItems);
+    set({ ...updatedCart, savedItems });
     void get().persistServer(updatedCart);
   },
 
@@ -156,6 +185,75 @@ export const useCartStore = create((set, get) => ({
     persistLocal(updatedCart);
     set(updatedCart);
     void get().persistServer(updatedCart);
+  },
+
+  saveForLater: (productId) => {
+    const { items, storeId, savedItems } = get();
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
+
+    const nextItems = items.filter((i) => i.productId !== productId);
+    const nextCart = {
+      storeId: nextItems.length ? storeId : null,
+      items: nextItems,
+    };
+
+    const existingSaved = savedItems.find((i) => i.productId === productId);
+    const nextSaved = existingSaved
+      ? savedItems.map((i) =>
+          i.productId === productId ? { ...i, quantity: i.quantity + item.quantity, storeId: i.storeId || storeId } : i
+        )
+      : [...savedItems, { ...item, storeId }];
+
+    persistLocal(nextCart);
+    persistSavedItems(nextSaved);
+    set({ ...nextCart, savedItems: nextSaved });
+    void get().persistServer(nextCart);
+    pushToast({ type: "success", message: "Item saved for later." });
+  },
+
+  moveSavedToCart: (productId) => {
+    const { items, savedItems, storeId } = get();
+    const saved = savedItems.find((i) => i.productId === productId);
+    if (!saved) return;
+
+    const targetStoreId = saved.storeId || storeId;
+    if (items.length && storeId && targetStoreId && storeId !== targetStoreId) {
+      pushToast({ type: "warning", message: "Cart has items from another store." });
+      return;
+    }
+
+    const existing = items.find((i) => i.productId === productId);
+    const nextItems = existing
+      ? items.map((i) => (i.productId === productId ? { ...i, quantity: i.quantity + saved.quantity } : i))
+      : [
+          ...items,
+          {
+            productId: saved.productId,
+            title: saved.title,
+            price: saved.price,
+            image: saved.image,
+            quantity: saved.quantity,
+          },
+        ];
+
+    const nextSaved = savedItems.filter((i) => i.productId !== productId);
+    const nextCart = {
+      storeId: storeId || targetStoreId || null,
+      items: nextItems,
+    };
+
+    persistLocal(nextCart);
+    persistSavedItems(nextSaved);
+    set({ ...nextCart, savedItems: nextSaved });
+    void get().persistServer(nextCart);
+    pushToast({ type: "success", message: "Item moved to cart." });
+  },
+
+  removeSavedItem: (productId) => {
+    const nextSaved = get().savedItems.filter((i) => i.productId !== productId);
+    persistSavedItems(nextSaved);
+    set({ savedItems: nextSaved });
   },
 
   clearCart: () => {

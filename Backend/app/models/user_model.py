@@ -1,4 +1,4 @@
-from sqlalchemy import (Column, Integer, String, Boolean, Enum, DateTime, func)
+from sqlalchemy import (Column, Integer, String, Boolean, Enum, DateTime, func, Float)
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.base import Base
 import enum
@@ -26,8 +26,8 @@ class User(Base):
     city = Column(String(100), nullable=True)
     state = Column(String(100), nullable=True)
     pincode = Column(String(20), nullable=True)
-    latitude = Column(String(50), nullable=True)
-    longitude = Column(String(50), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     
     user_metadata = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

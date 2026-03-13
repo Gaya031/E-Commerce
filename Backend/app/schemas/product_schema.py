@@ -3,20 +3,21 @@ from typing import Optional, List
 
 class ProductCreate(BaseModel):
     title: str = Field(min_length=3)
-    description: Optional[str]
+    description: Optional[str] = None
     price: int = Field(gt=0)
     stock: int = Field(ge=0)
-    images: Optional[List[str]]
-    category: Optional[str]
+    images: Optional[List[str]] = None
+    category: Optional[str] = None
     is_active: bool = True
 
 class ProductUpdate(BaseModel):
-    title: Optional[str]
-    description: Optional[str]
-    price: Optional[int]
-    images: Optional[List[str]]
-    category: Optional[str]
-    is_active: Optional[bool]
+    title: Optional[str] = Field(default=None, min_length=3)
+    description: Optional[str] = None
+    price: Optional[int] = Field(default=None, gt=0)
+    stock: Optional[int] = Field(default=None, ge=0)
+    images: Optional[List[str]] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class StockUpdate(BaseModel):
     stock: int = Field(ge=0)

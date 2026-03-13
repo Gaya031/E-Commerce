@@ -42,8 +42,8 @@ class SellerOut(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     pincode: Optional[str] = None
-    latitude: Optional[str] = None
-    longitude: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     delivery_radius_km: int = 5
     total_reviews: int = 0
     average_rating: float = 0.0

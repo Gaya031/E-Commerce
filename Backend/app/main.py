@@ -1,4 +1,5 @@
 import time
+import warnings
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,15 +8,18 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.observability import request_metrics
 from app.api.api_v1 import api_router
 from app.db.redis import init_redis, close_redis
 from app.db.postgres import init_db
 from app.core.exceptions import AppException
 from app.core.logging import logger
+from app.core.telemetry import init_telemetry
 from app.services.search_service import close_search_client, ensure_search_indices
 
 @asynccontextmanager
@@ -38,15 +42,30 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    secret_length = len((settings.SECRET_KEY or "").encode("utf-8"))
+    if secret_length < settings.JWT_MIN_SECRET_LENGTH:
+        msg = (
+            f"SECRET_KEY must be at least {settings.JWT_MIN_SECRET_LENGTH} bytes "
+            f"for HS256. Current length={secret_length}."
+        )
+        if settings.DEBUG:
+            warnings.warn(msg)
+        else:
+            raise RuntimeError(msg)
+
     app = FastAPI(
         title=settings.APP_NAME,
         debug=settings.DEBUG,
         lifespan=lifespan,
     )
-    
+    init_telemetry(app)
+
+    if settings.trusted_hosts:
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=settings.cors_origins or ["http://localhost:5173"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -60,25 +79,66 @@ def create_app() -> FastAPI:
     async def security_and_request_logging(request: Request, call_next):
         request_id = request.headers.get("x-request-id") or str(uuid4())
         start = time.perf_counter()
+        request_metrics.begin_request()
+        status_code = 500
+        response = None
         try:
             response = await call_next(request)
+            status_code = response.status_code
         except Exception:
             logger.exception("Unhandled error request_id=%s path=%s", request_id, request.url.path)
             raise
-        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        finally:
+            duration_ms = round((time.perf_counter() - start) * 1000, 2)
+            request_metrics.end_request(
+                method=request.method,
+                path=request.url.path,
+                status_code=status_code,
+                duration_ms=duration_ms,
+            )
+            logger.info(
+                "request_id=%s method=%s path=%s status=%s duration_ms=%s",
+                request_id,
+                request.method,
+                request.url.path,
+                status_code,
+                duration_ms,
+            )
+
+        if response is None:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "Internal server error",
+                    },
+                },
+            )
+
+        csp = (
+            "default-src 'self'; img-src 'self' data: https:; "
+            "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+            "connect-src 'self' https: http:; frame-ancestors 'none';"
+        )
         response.headers["x-request-id"] = request_id
         response.headers["x-content-type-options"] = "nosniff"
         response.headers["x-frame-options"] = "DENY"
+        response.headers["x-xss-protection"] = "1; mode=block"
+        response.headers["content-security-policy"] = csp
+        response.headers["permissions-policy"] = "geolocation=(self), camera=(), microphone=()"
+        response.headers["cross-origin-opener-policy"] = "same-origin"
+        if request.url.path.startswith("/uploads/"):
+            response.headers["cross-origin-resource-policy"] = "cross-origin"
+        else:
+            response.headers["cross-origin-resource-policy"] = "same-origin"
         response.headers["referrer-policy"] = "strict-origin-when-cross-origin"
+        if settings.ENABLE_HSTS:
+            response.headers["strict-transport-security"] = (
+                f"max-age={settings.HSTS_MAX_AGE_SECONDS}; includeSubDomains; preload"
+            )
         response.headers["cache-control"] = response.headers.get("cache-control", "no-store")
-        logger.info(
-            "request_id=%s method=%s path=%s status=%s duration_ms=%s",
-            request_id,
-            request.method,
-            request.url.path,
-            response.status_code,
-            duration_ms,
-        )
         return response
 
     app.include_router(api_router, prefix=settings.API_V1_STR)

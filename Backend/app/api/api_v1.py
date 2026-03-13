@@ -17,6 +17,8 @@ from app.api.routes.wallet_routes import router as wallet_router
 from app.api.routes.payout_routes import router as payout_router
 from app.api.routes.commission_routes import router as commission_router
 from app.api.routes.cart_routes import router as cart_router
+from app.api.routes.banner_routes import router as banner_router
+from app.api.routes.system_routes import router as system_router
 
 
 api_router = APIRouter()
@@ -39,3 +41,5 @@ api_router.include_router(wallet_router, tags=["Wallet"])
 api_router.include_router(payout_router, tags=["Payouts"])
 api_router.include_router(commission_router, tags=["Commissions"])
 api_router.include_router(cart_router, tags=["Cart"])
+api_router.include_router(banner_router, tags=["Banners"])
+api_router.include_router(system_router, tags=["System"])

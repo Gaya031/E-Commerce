@@ -3,13 +3,18 @@ import { useParams } from "react-router-dom";
 import Navbar from "../../components/navbar/Navbar";
 import Footer from "../../components/footer/Footer";
 import { getOrderById } from "../../api/order.api";
-import { getDeliveryServiceBase, getDeliveryTrackingByOrder } from "../../api/delivery.api";
+import {
+  getDeliveryServiceBase,
+  getDeliveryTrackingByOrder,
+  isDeliveryRealtimeAvailable,
+} from "../../api/delivery.api";
 
 const steps = ["placed", "packed", "shipped", "delivered"];
 const deliveryServiceBase = getDeliveryServiceBase();
-const SOCKET_IO_JS = `${deliveryServiceBase}/socket.io/socket.io.js`;
+const SOCKET_IO_JS = deliveryServiceBase ? `${deliveryServiceBase}/socket.io/socket.io.js` : "";
 
 const loadSocketIo = async () => {
+  if (!SOCKET_IO_JS) return null;
   if (window.io) return window.io;
   await new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src='${SOCKET_IO_JS}']`);
@@ -57,6 +62,8 @@ export default function OrderTracking() {
 
     const connect = async () => {
       try {
+        const realtimeAvailable = await isDeliveryRealtimeAvailable();
+        if (!realtimeAvailable) return;
         const ioClient = await loadSocketIo();
         if (!active || !ioClient) return;
         socket = ioClient(deliveryServiceBase, { transports: ["websocket", "polling"] });

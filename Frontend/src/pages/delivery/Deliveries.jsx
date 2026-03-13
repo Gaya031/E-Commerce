@@ -16,7 +16,7 @@ export default function DeliveryDeliveries() {
 
     const load = async () => {
       try {
-        const res = await getAssignedDeliveries();
+        const res = await getAssignedDeliveries(true);
         if (!mounted) return;
         setDeliveries(Array.isArray(res.data) ? res.data : []);
       } catch (err) {

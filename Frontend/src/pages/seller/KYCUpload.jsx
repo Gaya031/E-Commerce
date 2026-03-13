@@ -1,20 +1,29 @@
 import { useEffect, useState } from "react";
 
 import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
-import { getSellerProfile, updateMySellerKYC } from "../../api/seller.api";
+import { getSellerProfile, updateMySellerKYC, uploadSellerKycDocument } from "../../api/seller.api";
+
+const DOC_FIELDS = [
+  { key: "aadhar", label: "Aadhar" },
+  { key: "pan", label: "PAN" },
+  { key: "gst", label: "GST" },
+  { key: "business_proof", label: "Business Proof" },
+];
 
 export default function SellerKYCUpload() {
   const [hasProfile, setHasProfile] = useState(false);
-  const [form, setForm] = useState({ aadhar: "", pan: "", gst: "", business_proof: "" });
+  const [docs, setDocs] = useState({ aadhar: "", pan: "", gst: "", business_proof: "" });
+  const [files, setFiles] = useState({ aadhar: null, pan: null, gst: null, business_proof: null });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getSellerProfile()
       .then((res) => {
         setHasProfile(true);
         const docs = res.data?.kyc_docs || {};
-        setForm({
+        setDocs({
           aadhar: docs.aadhar || "",
           pan: docs.pan || "",
           gst: docs.gst || "",
@@ -28,11 +37,25 @@ export default function SellerKYCUpload() {
   const submit = async (e) => {
     e.preventDefault();
     setMessage("");
+    setSaving(true);
     try {
-      await updateMySellerKYC(form);
-      setMessage("KYC uploaded successfully.");
+      const nextDocs = { ...docs };
+
+      for (const field of DOC_FIELDS) {
+        const file = files[field.key];
+        if (!file) continue;
+        const uploadRes = await uploadSellerKycDocument(file, field.key);
+        nextDocs[field.key] = uploadRes?.data?.url || nextDocs[field.key] || "";
+      }
+
+      await updateMySellerKYC(nextDocs);
+      setDocs(nextDocs);
+      setFiles({ aadhar: null, pan: null, gst: null, business_proof: null });
+      setMessage("KYC documents uploaded successfully.");
     } catch (err) {
       setMessage(err?.response?.data?.detail || "KYC upload failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -47,31 +70,35 @@ export default function SellerKYCUpload() {
           </div>
         ) : (
           <form onSubmit={submit} className="bg-white p-6 rounded-xl shadow space-y-4">
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="Aadhar"
-              value={form.aadhar}
-              onChange={(e) => setForm({ ...form, aadhar: e.target.value })}
-            />
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="PAN"
-              value={form.pan}
-              onChange={(e) => setForm({ ...form, pan: e.target.value })}
-            />
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="GST"
-              value={form.gst}
-              onChange={(e) => setForm({ ...form, gst: e.target.value })}
-            />
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="Business proof URL"
-              value={form.business_proof}
-              onChange={(e) => setForm({ ...form, business_proof: e.target.value })}
-            />
-            <button className="w-full bg-blue-600 text-white py-2 rounded">Upload KYC</button>
+            {DOC_FIELDS.map((field) => (
+              <div key={field.key} className="space-y-2 border rounded-lg p-3">
+                <label className="block text-sm font-medium">{field.label}</label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="w-full border rounded px-3 py-2"
+                  onChange={(e) =>
+                    setFiles((prev) => ({ ...prev, [field.key]: e.target.files?.[0] || null }))
+                  }
+                />
+                {files[field.key] && (
+                  <p className="text-xs text-gray-600">Selected: {files[field.key].name}</p>
+                )}
+                {docs[field.key] && (
+                  <a
+                    href={docs[field.key]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    View current {field.label} document
+                  </a>
+                )}
+              </div>
+            ))}
+            <button disabled={saving} className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-70">
+              {saving ? "Uploading..." : "Upload KYC Documents"}
+            </button>
             {message && <p className="text-sm">{message}</p>}
           </form>
         )}

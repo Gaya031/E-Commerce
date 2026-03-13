@@ -6,13 +6,14 @@ import {
   getDeliveryMapRoute,
   getDeliveryRouteContext,
   getDeliveryServiceBase,
+  isDeliveryRealtimeAvailable,
   postDeliveryLocation,
 } from "../../api/delivery.api";
 
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const deliveryServiceBase = getDeliveryServiceBase();
-const SOCKET_IO_JS = `${deliveryServiceBase}/socket.io/socket.io.js`;
+const SOCKET_IO_JS = deliveryServiceBase ? `${deliveryServiceBase}/socket.io/socket.io.js` : "";
 
 const loadLeaflet = async () => {
   if (window.L) return window.L;
@@ -45,6 +46,7 @@ const loadLeaflet = async () => {
 };
 
 const loadSocketIo = async () => {
+  if (!SOCKET_IO_JS) return null;
   if (window.io) return window.io;
 
   await new Promise((resolve, reject) => {
@@ -158,6 +160,8 @@ export default function NavigationMap() {
 
     const initSocket = async () => {
       try {
+        const realtimeAvailable = await isDeliveryRealtimeAvailable();
+        if (!realtimeAvailable) return;
         const ioClient = await loadSocketIo();
         if (!active || !ioClient) return;
         const socket = ioClient(deliveryServiceBase, { transports: ["websocket", "polling"] });

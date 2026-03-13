@@ -11,6 +11,12 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User:
 
 async def update_user_location(db: AsyncSession, user_id: int, location_data: dict) -> User:
     user = await get_user_by_id(db, user_id)
+    for key in ("latitude", "longitude"):
+        if key in location_data and location_data[key] is not None:
+            try:
+                location_data[key] = float(location_data[key])
+            except (TypeError, ValueError):
+                location_data[key] = None
     for key, value in location_data.items():
         setattr(user, key, value)
     await db.commit()

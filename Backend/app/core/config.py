@@ -1,12 +1,22 @@
 from pydantic_settings import BaseSettings
 
+
+def _split_csv(raw: str) -> list[str]:
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "RushCart"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
-    
-    # Supabase
+    APP_ENV: str = "development"
+    LOG_LEVEL: str = "INFO"
+    LOG_JSON: bool = True
+
+    # Supabase / PostgreSQL
     DATABASE_URL: str
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 30
@@ -14,17 +24,24 @@ class Settings(BaseSettings):
 
     # Redis
     REDIS_URL: str
-    
+
     # JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int  = 15
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     RESET_TOKEN_EXPIRE_MINUTES: int = 30
-    JWT_ISSUER : str = "rushcart-auth"
+    JWT_ISSUER: str = "rushcart-auth"
+    JWT_MIN_SECRET_LENGTH: int = 32
 
     # Security
     BCRYPT_ROUNDS: int = 12
+    CORS_ORIGINS: str = "http://localhost:5173"
+    TRUSTED_HOSTS: str = "localhost,127.0.0.1"
+    ENABLE_HSTS: bool = False
+    HSTS_MAX_AGE_SECONDS: int = 31536000
+    ENFORCE_SELLER_SUBSCRIPTION: bool = True
+    UPLOAD_MAX_IMAGE_SIZE_MB: int = 15
 
     # Payments
     RAZORPAY_KEY_ID: str = ""
@@ -36,6 +53,18 @@ class Settings(BaseSettings):
     ELASTICSEARCH_PRODUCTS_INDEX: str = "rushcart_products"
     ELASTICSEARCH_STORES_INDEX: str = "rushcart_stores"
     ELASTICSEARCH_TIMEOUT_SECONDS: int = 5
+
+    # Observability / Telemetry
+    SENTRY_DSN: str = ""
+    SENTRY_ENVIRONMENT: str = "development"
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+    SENTRY_PROFILES_SAMPLE_RATE: float = 0.0
+    OTEL_ENABLED: bool = False
+    OTEL_SERVICE_NAME: str = "rushcart-backend"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    ALERT_ERROR_RATE_THRESHOLD: float = 0.05
+    ALERT_P95_MS_THRESHOLD: float = 1500.0
+    ALERT_INFLIGHT_THRESHOLD: int = 200
 
     # Email
     EMAILS_ENABLED: bool = False
@@ -50,13 +79,19 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # Bootstrap admin
-    ADMIN_EMAIL: str = "admin@rushcart.com"
-    ADMIN_PASSWORD: str = "Admin@123"
+    ADMIN_EMAIL: str
+    ADMIN_PASSWORD: str
     ADMIN_NAME: str = "RushCart Admin"
 
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8"
-    }
+    @property
+    def cors_origins(self) -> list[str]:
+        return _split_csv(self.CORS_ORIGINS)
+
+    @property
+    def trusted_hosts(self) -> list[str]:
+        return _split_csv(self.TRUSTED_HOSTS)
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
 
 settings = Settings()

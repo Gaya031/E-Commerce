@@ -7,18 +7,34 @@ import { pushToast } from "../../store/toast.store";
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(false);
 
+  const getErrorMessage = (err) =>
+    err?.response?.data?.error?.message ||
+    err?.response?.data?.detail ||
+    err?.response?.data?.message ||
+    err?.message ||
+    "Failed to initiate payout.";
+
   const handlePayout = async (type, id) => {
     setLoading(true);
     try {
+      let res;
       if (type === "seller") {
-        await payoutSeller(id);
+        res = await payoutSeller(id);
       } else {
-        await payoutDeliveryPartner(id);
+        res = await payoutDeliveryPartner(id);
       }
-      pushToast({ type: "success", message: "Payout initiated successfully." });
+      const payload = res?.data || {};
+      if (payload.processed === false) {
+        pushToast({ type: "warning", message: payload.reason || "No pending payouts found." });
+      } else {
+        pushToast({
+          type: "success",
+          message: `Payout initiated successfully${payload.amount ? ` (₹${payload.amount})` : ""}.`,
+        });
+      }
     } catch (err) {
       console.error("Error initiating payout:", err);
-      pushToast({ type: "error", message: "Failed to initiate payout." });
+      pushToast({ type: "error", message: getErrorMessage(err) });
     } finally {
       setLoading(false);
     }

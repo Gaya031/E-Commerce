@@ -52,6 +52,7 @@ const AdminRefundControl = lazy(() => import("./pages/admin/RefundControl"));
 const AdminCommissionConfig = lazy(() => import("./pages/admin/CommissionConfig"));
 const AdminRevenueAnalytics = lazy(() => import("./pages/admin/RevenueAnalytics"));
 const AdminReportsExports = lazy(() => import("./pages/admin/ReportsExports"));
+const AdminBanners = lazy(() => import("./pages/admin/Banners"));
 const DeliveryDeliveries = lazy(() => import("./pages/delivery/Deliveries"));
 const AvailableDeliveries = lazy(() => import("./pages/delivery/AvailableDeliveries"));
 const AssignedDelivery = lazy(() => import("./pages/delivery/AssignedDelivery"));
@@ -354,6 +355,16 @@ function App() {
             <ProtectedRoute>
               <RoleRoute role="admin">
                 <AdminReportsExports />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/banners"
+          element={
+            <ProtectedRoute>
+              <RoleRoute role="admin">
+                <AdminBanners />
               </RoleRoute>
             </ProtectedRoute>
           }

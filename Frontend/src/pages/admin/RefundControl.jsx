@@ -4,8 +4,23 @@ import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function AdminRefundControl() {
   const [rows, setRows] = useState([]);
-  const load = () => getRefundQueue().then((res) => setRows(res.data || []));
-  useEffect(load, []);
+
+  const load = async () => {
+    const res = await getRefundQueue();
+    setRows(res.data || []);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    getRefundQueue().then((res) => {
+      if (!cancelled) {
+        setRows(res.data || []);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const refund = async (orderId) => {
     await refundOrder(orderId);

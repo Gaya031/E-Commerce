@@ -8,6 +8,19 @@ from app.services.search_service import upsert_store_document
 from app.utils.simple_cache import cache_delete_prefix
 
 
+def _normalize_location_fields(data: dict | None) -> dict:
+    if not data:
+        return {}
+    normalized = dict(data)
+    for key in ("latitude", "longitude"):
+        if key in normalized and normalized[key] is not None:
+            try:
+                normalized[key] = float(normalized[key])
+            except (TypeError, ValueError):
+                normalized[key] = None
+    return normalized
+
+
 async def create_seller_profile(
     db: AsyncSession, user_id: int, store_name: str, data: dict | None = None
 ) -> Seller:
@@ -19,7 +32,7 @@ async def create_seller_profile(
         user_id=user_id,
         store_name=store_name,
         approved=False,
-        **(data or {}),
+        **_normalize_location_fields(data),
     )
     
     db.add(seller)
@@ -44,7 +57,8 @@ async def update_seller_profile(db: AsyncSession, user_id: int, data: dict) -> S
     if not seller:
         raise NotFoundException("Seller not found")
 
-    for key, value in data.items():
+    normalized_data = _normalize_location_fields(data)
+    for key, value in normalized_data.items():
         setattr(seller, key, value)
 
     await db.commit()
@@ -64,6 +78,25 @@ async def upload_kyc_for_user(db: AsyncSession, user_id: int, kyc_data: dict) ->
         raise NotFoundException("Seller not found")
 
     seller.kyc_docs = kyc_data
+    await db.commit()
+    await db.refresh(seller)
+    await cache_delete_prefix("search:")
+    await cache_delete_prefix("stores:")
+    return seller
+
+
+async def upload_kyc_document_for_user(
+    db: AsyncSession, user_id: int, doc_type: str, doc_url: str
+) -> Seller:
+    seller = await get_seller_by_user_id(db, user_id)
+    if not seller:
+        raise NotFoundException("Seller not found")
+
+    docs = seller.kyc_docs if isinstance(seller.kyc_docs, dict) else {}
+    docs = dict(docs)
+    docs[doc_type] = doc_url
+    seller.kyc_docs = docs
+
     await db.commit()
     await db.refresh(seller)
     await cache_delete_prefix("search:")

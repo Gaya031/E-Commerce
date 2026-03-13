@@ -5,15 +5,16 @@ import { getStoreProducts } from '@/api/store.api';
 
 const CategoryProducts = ({ products: providedProducts }) => {
     const {storeId} = useParams();
-    const [products, setProducts] = useState(providedProducts || []);
+    const [fetchedProducts, setFetchedProducts] = useState([]);
 
     useEffect(() => {
         if (providedProducts) {
-            setProducts(providedProducts);
             return;
         }
-        getStoreProducts(storeId).then(res => setProducts(res.data))
+        getStoreProducts(storeId).then(res => setFetchedProducts(res.data))
     }, [storeId, providedProducts]);
+
+    const products = providedProducts || fetchedProducts;
 
     const grouped = products.reduce((acc, p) => {
         const key = p.category || "Other";

@@ -33,31 +33,35 @@ async def get_nearby_stores(
     sellers = result.scalars().all()
     
     stores_with_distance = []
+    candidate_stores = []
     for seller in sellers:
-        if seller.latitude and seller.longitude:
+        if seller.latitude is not None and seller.longitude is not None:
             try:
                 seller_lat = float(seller.latitude)
                 seller_lng = float(seller.longitude)
                 distance = calculate_distance_km(lat, lng, seller_lat, seller_lng)
                 
+                store_payload = {
+                    "id": seller.id,
+                    "store_name": seller.store_name,
+                    "logo_url": seller.logo_url,
+                    "description": seller.description,
+                    "city": seller.city,
+                    "distance_km": round(distance, 2),
+                    "total_reviews": seller.total_reviews,
+                    "average_rating": seller.average_rating,
+                    "delivery_time_minutes": _estimate_delivery_time(distance),
+                }
+                candidate_stores.append(store_payload)
                 if distance <= radius_km:
-                    stores_with_distance.append({
-                        "id": seller.id,
-                        "store_name": seller.store_name,
-                        "logo_url": seller.logo_url,
-                        "description": seller.description,
-                        "city": seller.city,
-                        "distance_km": round(distance, 2),
-                        "total_reviews": seller.total_reviews,
-                        "average_rating": seller.average_rating,
-                        "delivery_time_minutes": _estimate_delivery_time(distance)
-                    })
+                    stores_with_distance.append(store_payload)
             except (ValueError, TypeError):
                 continue
     
-    # Sort by distance and apply pagination after filtering.
-    stores_with_distance.sort(key=lambda x: x["distance_km"])
-    payload = stores_with_distance[skip : skip + limit]
+    # If no stores are inside radius, fallback to nearest stores so the section isn't empty.
+    source = stores_with_distance if stores_with_distance else candidate_stores
+    source.sort(key=lambda x: x["distance_km"])
+    payload = source[skip : skip + limit]
     await cache_set(cache_key, payload, ttl_seconds=30)
     return payload
 

@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime, timezone
 from app.models.product_model import Product
 from app.models.seller_model import Seller
+from app.models.subscription_model import Subscription
+from app.core.config import settings
 from app.core.exceptions import (PermissionDeniedException, NotFoundException, ConflictException)
 from app.core.logging import logger
 from app.services.search_service import upsert_product_document
@@ -17,8 +20,39 @@ async def get_approved_seller(db: AsyncSession, user_id: int) -> Seller:
     
     if not seller.approved:
         raise PermissionDeniedException("seller not approved")
-    
+
+    await _enforce_subscription(db, seller)
     return seller
+
+
+def _to_utc(value):
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+async def _enforce_subscription(db: AsyncSession, seller: Seller) -> None:
+    if not seller.subscription_plan_id:
+        if settings.ENFORCE_SELLER_SUBSCRIPTION:
+            raise PermissionDeniedException("Active subscription required")
+        return
+
+    plan = await db.get(Subscription, seller.subscription_plan_id)
+    if not plan or not plan.active:
+        if settings.ENFORCE_SELLER_SUBSCRIPTION:
+            raise PermissionDeniedException("Active subscription required")
+        return
+
+    expiry = _to_utc(seller.subscription_expiry)
+    now = datetime.now(timezone.utc)
+    if expiry and expiry < now and settings.ENFORCE_SELLER_SUBSCRIPTION:
+        raise PermissionDeniedException("Seller subscription expired")
+
+    if seller.commission_percent != plan.commission_percent:
+        seller.commission_percent = plan.commission_percent
+        await db.commit()
 
 
 async def create_product(db: AsyncSession, user_id: int, data: dict) -> Product:

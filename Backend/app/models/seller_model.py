@@ -31,8 +31,8 @@ class Seller(Base):
     address = Column(String(500), nullable=True)
     city = Column(String(100), nullable=True)
     pincode = Column(String(20), nullable=True)
-    latitude = Column(String(50), nullable=True)
-    longitude = Column(String(50), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     delivery_radius_km = Column(Integer, default=5)
     
     # Rating and reviews

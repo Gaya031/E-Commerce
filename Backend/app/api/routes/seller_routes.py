@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import case, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,12 +19,14 @@ from app.services.seller_service import (
     approve_seller,
     create_seller_profile,
     get_seller_by_user_id,
+    upload_kyc_document_for_user,
     update_seller_profile,
     upload_kyc,
     upload_kyc_for_user,
 )
 from app.utils.email_handler import send_email_background
 from app.utils.email_templates import order_status_email
+from app.utils.file_upload import upload_file
 
 router = APIRouter(tags=["sellers"])
 
@@ -46,6 +50,19 @@ async def create_seller(
         store_name=data.store_name,
         data=data.model_dump(exclude={"store_name"}, exclude_none=True),
     )
+
+
+@router.post("/upload-image")
+async def upload_seller_image(
+    request: Request,
+    file: UploadFile = File(...),
+    image_type: Literal["logo", "cover"] = Query(default="logo"),
+    current_user: User = Depends(require_roles("seller")),
+):
+    sub_dir = "sellers/logos" if image_type == "logo" else "sellers/covers"
+    image_path = await upload_file(file=file, sub_dir=sub_dir)
+    base_url = str(request.base_url).rstrip("/")
+    return {"url": f"{base_url}{image_path}", "path": image_path, "image_type": image_type}
 
 
 @router.put("/{seller_id}/kyc", response_model=SellerOut)
@@ -105,6 +122,27 @@ async def update_my_kyc(
     current_user: User = Depends(require_roles("seller")),
 ):
     return await upload_kyc_for_user(db=db, user_id=current_user.id, kyc_data=data.model_dump(exclude_none=True))
+
+
+@router.post("/me/kyc/upload-document")
+async def upload_my_kyc_document(
+    request: Request,
+    file: UploadFile = File(...),
+    doc_type: Literal["aadhar", "pan", "gst", "business_proof"] = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("seller")),
+):
+    image_path = await upload_file(
+        file=file,
+        sub_dir=f"sellers/kyc/{doc_type}",
+        allow_documents=True,
+    )
+    base_url = str(request.base_url).rstrip("/")
+    doc_url = f"{base_url}{image_path}"
+    seller = await upload_kyc_document_for_user(
+        db=db, user_id=current_user.id, doc_type=doc_type, doc_url=doc_url
+    )
+    return {"doc_type": doc_type, "url": doc_url, "kyc_docs": seller.kyc_docs}
 
 
 @router.get("/me/approval-status")

@@ -29,6 +29,7 @@ const navByRole = {
     ["/admin/commission-config", "Commission Config"],
     ["/admin/revenue-analytics", "Revenue Analytics"],
     ["/admin/reports", "Reports & Exports"],
+    ["/admin/banners", "Homepage Banners"],
     ["/admin/payouts", "Payouts"],
   ],
   delivery: [

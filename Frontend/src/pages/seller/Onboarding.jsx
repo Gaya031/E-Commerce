@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 
 import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
-import { createSellerProfile, getSellerProfile, updateSellerProfile } from "../../api/seller.api";
+import {
+  createSellerProfile,
+  getSellerProfile,
+  updateSellerProfile,
+  uploadSellerImage,
+} from "../../api/seller.api";
 
 const initialForm = {
   store_name: "",
@@ -21,6 +26,13 @@ export default function SellerOnboarding() {
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [autoLocationAttempted, setAutoLocationAttempted] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
+  const [coverPreview, setCoverPreview] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
     getSellerProfile()
@@ -46,12 +58,106 @@ export default function SellerOnboarding() {
       .finally(() => setLoading(false));
   }, []);
 
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      const addr = data?.address || {};
+      return {
+        address: data?.display_name || "",
+        city: addr.city || addr.town || addr.village || "",
+        pincode: addr.postcode || "",
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const applyLiveLocation = async ({ silent = false } = {}) => {
+    if (!("geolocation" in navigator)) {
+      if (!silent) setMessage("Geolocation is not supported in this browser.");
+      return;
+    }
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        const resolved = await reverseGeocode(lat, lng);
+        setForm((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          address: prev.address || resolved?.address || "",
+          city: prev.city || resolved?.city || "",
+          pincode: prev.pincode || resolved?.pincode || "",
+        }));
+        setDetectingLocation(false);
+        if (!silent) setMessage("Live location fetched.");
+      },
+      (error) => {
+        setDetectingLocation(false);
+        if (silent) return;
+        if (error.code === 1) setMessage("Location permission denied.");
+        else if (error.code === 3) setMessage("Location request timed out.");
+        else setMessage("Unable to fetch live location.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    if (loading || autoLocationAttempted) return;
+    setAutoLocationAttempted(true);
+    if (!form.latitude || !form.longitude) {
+      void applyLiveLocation({ silent: true });
+    }
+  }, [loading, autoLocationAttempted, form.latitude, form.longitude]);
+
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [logoFile]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setCoverPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+
   const submit = async (e) => {
     e.preventDefault();
     setMessage("");
+    setUploadingImages(true);
     try {
+      let logoUrl = form.logo_url || "";
+      let coverUrl = form.cover_image || "";
+
+      if (logoFile) {
+        const logoRes = await uploadSellerImage(logoFile, "logo");
+        logoUrl = logoRes?.data?.url || logoRes?.data?.path || logoUrl;
+      }
+      if (coverFile) {
+        const coverRes = await uploadSellerImage(coverFile, "cover");
+        coverUrl = coverRes?.data?.url || coverRes?.data?.path || coverUrl;
+      }
+
       const payload = {
         ...form,
+        logo_url: logoUrl || undefined,
+        cover_image: coverUrl || undefined,
         latitude: form.latitude ? Number(form.latitude) : undefined,
         longitude: form.longitude ? Number(form.longitude) : undefined,
         delivery_radius_km: Number(form.delivery_radius_km || 5),
@@ -64,8 +170,13 @@ export default function SellerOnboarding() {
         setMessage("Seller onboarding submitted.");
         setHasProfile(true);
       }
+      setForm((prev) => ({ ...prev, logo_url: logoUrl, cover_image: coverUrl }));
+      setLogoFile(null);
+      setCoverFile(null);
     } catch (err) {
       setMessage(err?.response?.data?.detail || "Failed to save seller profile");
+    } finally {
+      setUploadingImages(false);
     }
   };
 
@@ -103,6 +214,16 @@ export default function SellerOnboarding() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => applyLiveLocation({ silent: false })}
+                disabled={detectingLocation}
+                className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50 disabled:opacity-60"
+              >
+                {detectingLocation ? "Detecting location..." : "Use Live Location"}
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <input
                 className="w-full border rounded px-3 py-2"
@@ -124,18 +245,38 @@ export default function SellerOnboarding() {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                className="w-full border rounded px-3 py-2"
-                placeholder="Logo URL"
-                value={form.logo_url}
-                onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-              />
-              <input
-                className="w-full border rounded px-3 py-2"
-                placeholder="Cover Image URL"
-                value={form.cover_image}
-                onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
-              />
+              <div>
+                <label className="block text-sm font-medium mb-1">Store Logo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                  className="w-full border rounded px-3 py-2"
+                />
+                {(logoPreview || form.logo_url) && (
+                  <img
+                    src={logoPreview || form.logo_url}
+                    alt="Logo preview"
+                    className="mt-2 w-16 h-16 object-cover rounded border"
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Cover Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                  className="w-full border rounded px-3 py-2"
+                />
+                {(coverPreview || form.cover_image) && (
+                  <img
+                    src={coverPreview || form.cover_image}
+                    alt="Cover preview"
+                    className="mt-2 w-full h-16 object-cover rounded border"
+                  />
+                )}
+              </div>
               <input
                 type="number"
                 min={1}
@@ -146,8 +287,8 @@ export default function SellerOnboarding() {
                 onChange={(e) => setForm({ ...form, delivery_radius_km: e.target.value })}
               />
             </div>
-            <button className="w-full bg-green-600 text-white py-2 rounded">
-              {hasProfile ? "Update Seller Profile" : "Submit Onboarding"}
+            <button disabled={uploadingImages} className="w-full bg-green-600 text-white py-2 rounded disabled:opacity-70">
+              {uploadingImages ? "Uploading images..." : hasProfile ? "Update Seller Profile" : "Submit Onboarding"}
             </button>
             {message && <p className="text-sm">{message}</p>}
           </form>

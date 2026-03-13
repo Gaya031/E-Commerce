@@ -27,6 +27,14 @@ export const uploadProductImage = (file) => {
   return api.post("/products/upload-image", formData);
 };
 
+export const uploadSellerImage = (file, imageType = "logo") => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post("/sellers/upload-image", formData, {
+    params: { image_type: imageType },
+  });
+};
+
 // Seller - Profile
 export const createSellerProfile = (data) => {
   return api.post("/sellers/", data);
@@ -42,6 +50,14 @@ export const updateSellerKYC = (sellerId, data) => {
 
 export const updateMySellerKYC = (data) => {
   return api.put("/sellers/me/kyc", data);
+};
+
+export const uploadSellerKycDocument = (file, docType) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post("/sellers/me/kyc/upload-document", formData, {
+    params: { doc_type: docType },
+  });
 };
 
 export const getSellerProfile = () => {

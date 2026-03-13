@@ -4,8 +4,23 @@ import RoleDashboardLayout from "../../components/layouts/RoleDashboardLayout";
 
 export default function AdminReturnApproval() {
   const [rows, setRows] = useState([]);
-  const load = () => getPendingReturns().then((res) => setRows(res.data || []));
-  useEffect(load, []);
+
+  const load = async () => {
+    const res = await getPendingReturns();
+    setRows(res.data || []);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    getPendingReturns().then((res) => {
+      if (!cancelled) {
+        setRows(res.data || []);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const decide = async (id, approved) => {
     await decideReturn(id, { approved });

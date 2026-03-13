@@ -56,6 +56,7 @@ import { useCartStore } from "../../store/cart.store";
 
 const CartItem = ({ item }) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const saveForLater = useCartStore((s) => s.saveForLater);
 
   return (
     <div className="bg-white p-4 rounded-xl flex gap-4">
@@ -76,7 +77,12 @@ const CartItem = ({ item }) => {
           >
             Remove
           </button>
-          <button className="text-green-600">Save for later</button>
+          <button
+            className="text-green-600"
+            onClick={() => saveForLater(item.productId)}
+          >
+            Save for later
+          </button>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import ReviewModal from "../../components/store/ReviewModal";
 import ReviewsList from "../../components/store/ReviewsList";
 import StoreReviewsSummary from "../../components/store/StoreReviewsSummary";
 import { useCartStore } from "../../store/cart.store";
+import { getProductImage } from "../../utils/media";
 
 const Product = () => {
   const { productId } = useParams();
@@ -20,6 +21,7 @@ const Product = () => {
   const [summary, setSummary] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
+  const productImage = getProductImage(product, "/product.jpg");
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -55,7 +57,7 @@ const Product = () => {
       id: product.id,
       title: product.title,
       price: product.price,
-      image: product.images?.[0],
+      image: productImage,
       quantity,
     });
   };
@@ -95,7 +97,7 @@ const Product = () => {
           <div className="bg-white rounded-lg shadow p-4">
             {product.images && product.images.length > 0 ? (
               <img
-                src={product.images[0]}
+                src={productImage}
                 alt={product.title}
                 className="w-full h-96 object-cover rounded-lg"
               />
