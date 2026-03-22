@@ -10,7 +10,8 @@ const defaultBanners = [
     id: "default-1",
     title: "Fresh Groceries in 20 mins",
     subtitle: "Daily essentials from nearby stores",
-    image_url: "/hero.png",
+    image_url:
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2400&auto=format&fit=crop",
     cta_primary_label: "Shop Now",
     cta_primary_link: "/products",
     cta_secondary_label: "View Offers",

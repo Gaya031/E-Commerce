@@ -31,6 +31,10 @@ export const resolveMediaUrl = (value, fallback = "") => {
     return `${getApiOrigin()}${raw}`;
   }
 
+  if (raw === "/hero.png" || raw.endsWith("/hero.png")) {
+    return fallback || raw;
+  }
+
   if (raw.startsWith("uploads/")) {
     return `${getApiOrigin()}/${raw}`;
   }

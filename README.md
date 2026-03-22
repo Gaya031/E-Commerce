@@ -154,7 +154,7 @@ JWT_ISSUER=rushcart-auth
 JWT_MIN_SECRET_LENGTH=32
 
 BCRYPT_ROUNDS=12
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=https://rush-cart-ten.vercel.app
 TRUSTED_HOSTS=localhost,127.0.0.1
 ENABLE_HSTS=false
 HSTS_MAX_AGE_SECONDS=31536000
@@ -179,7 +179,7 @@ SMTP_FROM_EMAIL=
 SMTP_FROM_NAME=RushCart
 SMTP_USE_TLS=true
 SMTP_USE_SSL=false
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://rush-cart-ten.vercel.app
 
 ADMIN_EMAIL=admin@rushcart.local
 ADMIN_PASSWORD=ChangeThisAdminPassword123!
@@ -195,7 +195,7 @@ GOOGLE_CLIENT_ID=
 ### Frontend `.env`
 
 ```
-VITE_API_URL=http://localhost:8000/api/v1
+VITE_API_URL=https://rushcart.onrender.com/api/v1
 VITE_DELIVERY_SERVICE_URL=http://localhost:4001
 VITE_GOOGLE_CLIENT_ID=
 ```
@@ -204,7 +204,7 @@ VITE_GOOGLE_CLIENT_ID=
 
 ```
 PORT=4001
-ALLOWED_ORIGINS=http://localhost:5173
+ALLOWED_ORIGINS=https://rush-cart-ten.vercel.app
 ```
 
 ## Run Services Locally

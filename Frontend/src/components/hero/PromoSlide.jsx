@@ -6,7 +6,10 @@ export default function PromoSlide({ banner }) {
   const navigate = useNavigate();
   const title = banner?.title || "Fresh Groceries in 20 mins";
   const subtitle = banner?.subtitle || "Daily essentials from nearby stores";
-  const imageUrl = resolveMediaUrl(banner?.image_url, "/hero.png");
+  const imageUrl = resolveMediaUrl(
+    banner?.image_url,
+    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2400&auto=format&fit=crop"
+  );
   const primaryLabel = banner?.cta_primary_label || "Shop Now";
   const primaryLink = banner?.cta_primary_link || "/products";
   const secondaryLabel = banner?.cta_secondary_label || "View Offers";

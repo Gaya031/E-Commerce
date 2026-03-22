@@ -16,8 +16,8 @@ engine: AsyncEngine = create_async_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT_SECONDS,
     connect_args={
-        # "ssl":"require",
-        "ssl":False,
+        "ssl":"require",
+        # "ssl":False,
         "command_timeout": 30,
     }
 )

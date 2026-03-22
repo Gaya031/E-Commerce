@@ -10,7 +10,7 @@ import { registerTrackingSocketHandlers } from "./socket/registerTrackingSocketH
 const app = express();
 app.disable("x-powered-by");
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173")
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://rush-cart-ten.vercel.app")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);

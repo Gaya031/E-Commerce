@@ -36,8 +36,8 @@ class Settings(BaseSettings):
 
     # Security
     BCRYPT_ROUNDS: int = 12
-    CORS_ORIGINS: str = "http://localhost:5173"
-    TRUSTED_HOSTS: str = "localhost,127.0.0.1"
+    CORS_ORIGINS: str = "https://rush-cart-ten.vercel.app"
+    TRUSTED_HOSTS: str = "rushcart.onrender.com,localhost,127.0.0.1"
     ENABLE_HSTS: bool = False
     HSTS_MAX_AGE_SECONDS: int = 31536000
     ENFORCE_SELLER_SUBSCRIPTION: bool = True
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "RushCart"
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "https://rush-cart-ten.vercel.app"
 
     # Bootstrap admin
     ADMIN_EMAIL: str
